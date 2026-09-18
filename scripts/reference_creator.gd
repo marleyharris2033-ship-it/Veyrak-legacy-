@@ -10,8 +10,8 @@ const REFERENCE = preload("res://assets/creator/layout-reference.jpeg")
 const PALETTE = preload("res://assets/creator/character_palette.gdshader")
 const GOLD = Color("efbb64")
 const BLUE = Color("a5b9ed")
-const KEYS = ["build", "face", "hair", "hair_colour", "eyes", "skin", "markings", "outfit"]
-const TITLES = ["BODY TYPE", "FACE", "HAIR STYLE", "HAIR COLOUR", "EYES", "SKIN TONE", "MARKINGS", "OUTFIT"]
+const KEYS = ["build", "face", "ridge", "brow", "hair", "hair_colour", "eyes", "skin", "markings", "outfit", "accent"]
+const TITLES = ["BODY TYPE", "FACE", "CRANIAL RIDGE", "BROW", "HAIR STYLE", "HAIR COLOUR", "EYES", "SKIN TONE", "MARKINGS", "OUTFIT", "ARMOUR ACCENT"]
 var profile: Dictionary
 var initial_profile: Dictionary
 var canvas: Control
@@ -234,7 +234,7 @@ func _layout() -> void:
 	var viewport = get_viewport_rect().size
 	portrait_layout = viewport.x < viewport.y and viewport.x < 900
 	compact = viewport.x < 1000
-	var dimensions = Vector2(768, 2240) if portrait_layout else Vector2(1536, 1024)
+	var dimensions = Vector2(768, 2580) if portrait_layout else Vector2(1536, 1024)
 	design_scale = viewport.x / dimensions.x if portrait_layout else minf(viewport.x / dimensions.x, viewport.y / dimensions.y)
 	canvas.scale = Vector2.ONE * design_scale
 	canvas.size = dimensions
@@ -269,9 +269,9 @@ func _layout() -> void:
 	live_character.scale = Vector2.ONE
 	# STRETCH_SCALE applies the chosen body silhouette, keeping foot height fixed.
 	warrior.stretch_mode = TextureRect.STRETCH_SCALE
-	var panel_rect = Rect2(18, 1010, 732, 1000) if portrait_layout else Rect2(1066, 17, 449, 873)
+	var panel_rect = Rect2(18, 1010, 732, 1320) if portrait_layout else Rect2(1046, 12, 475, 994)
 	_place(right_panel, panel_rect.position.x, panel_rect.position.y, panel_rect.size.x, panel_rect.size.y)
-	var row_h = 123.0 if portrait_layout else 108.0
+	var row_h = 112.0 if portrait_layout else 88.0
 	for i in range(KEYS.size()):
 		var key = KEYS[i]
 		var row = rows[key]
@@ -294,10 +294,10 @@ func _layout() -> void:
 	_place(name_input, name_rect.position.x + 32, name_rect.position.y + 39, name_rect.size.x - 112, name_rect.size.y - 51)
 	name_input.add_theme_font_size_override("font_size", 31 if portrait_layout else 23)
 	_place(canvas.get_node("NameDice"), name_rect.end.x - 70, name_rect.position.y + 36, 54, name_rect.size.y - 44)
-	_place(confirm_button, 150 if portrait_layout else 555, 2040 if portrait_layout else 914, 468 if portrait_layout else 390, 85 if portrait_layout else 61)
-	_place(back_button, 20 if portrait_layout else 27, 2150 if portrait_layout else 926, 220 if portrait_layout else 198, 66 if portrait_layout else 60)
-	_place(quote, 420 if portrait_layout else 1294, 2156 if portrait_layout else 925, 330 if portrait_layout else 220, 75)
-	_place(status, 24 if portrait_layout else 360, 2013 if portrait_layout else 981, 720 if portrait_layout else 820, 30 if portrait_layout else 43)
+	_place(confirm_button, 150 if portrait_layout else 555, 2380 if portrait_layout else 914, 468 if portrait_layout else 390, 85 if portrait_layout else 61)
+	_place(back_button, 20 if portrait_layout else 27, 2480 if portrait_layout else 926, 220 if portrait_layout else 198, 66 if portrait_layout else 60)
+	_place(quote, 420 if portrait_layout else 1294, 2486 if portrait_layout else 925, 330 if portrait_layout else 220, 75)
+	_place(status, 24 if portrait_layout else 360, 2353 if portrait_layout else 981, 720 if portrait_layout else 820, 30 if portrait_layout else 43)
 	if modal.visible: modal.hide()
 
 func _available(_key: String, _index: int) -> bool:
