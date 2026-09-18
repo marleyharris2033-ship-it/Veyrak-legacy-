@@ -60,11 +60,11 @@ func _draw_character() -> void:
 	var hair = Color(VeyrakProfile.HAIR_COLOURS[profile.hair_colour])
 	var eyes = Color(VeyrakProfile.EYE_COLOURS[profile.eyes])
 	var outfit = int(profile.outfit)
-	var armour = Color(["30333d", "4b5158", "363d4c", "bab6a5", "354d48", "575365"][outfit])
-	var trim = Color(["c5a65f", "a68b69", "b4bdc6", "c7a369", "9dba9c", "ad9fcd"][outfit])
+	var armour = Color(["30333d", "4b5158", "363d4c", "bab6a5", "354d48", "575365", "252b36", "4a4039"][outfit])
+	var trim = Color(["c5a65f", "a68b69", "b4bdc6", "c7a369", "9dba9c", "ad9fcd", "e0bd68", "b8865b"][outfit])
 	var dark = Color("171d28")
-	var width = [14, 17, 20, 23][profile.build] - (2 if profile.base == 1 else 0)
-	var face_width = [9, 8, 11, 9, 10, 8][profile.face]
+	var width = [14, 17, 20, 23, 26][profile.build] - (2 if profile.base == 1 else 0)
+	var face_width = [9, 8, 11, 9, 10, 8, 8, 10][profile.face]
 	# Optional cloak / robe silhouettes.
 	if outfit == 1 or outfit == 3:
 		block(49, 67, 46, 62, armour.darkened(0.3))
@@ -117,6 +117,14 @@ func _draw_character() -> void:
 	if outfit == 3 or outfit == 5:
 		block(61, 100, 23, 18, armour)
 		block(70, 101, 4, 17, trim)
+	if outfit == 6:
+		block(58, 63, 29, 5, trim)
+		block(55, 66, 8, 17, armour.lightened(0.08))
+		block(82, 66, 8, 17, armour.lightened(0.08))
+		block(68, 70, 9, 15, trim.darkened(0.18))
+	if outfit == 7:
+		block(58, 87, 29, 4, trim)
+		block(63, 91, 19, 12, armour.darkened(0.18))
 	if outfit == 4:
 		for i in range(7):
 			block(59 + i * 3, 66 + i * 4, 5, 5, trim.darkened(0.3))
@@ -156,6 +164,14 @@ func _draw_character() -> void:
 	if profile.face == 4:
 		block(64, 45, 1, 7, light)
 		block(78, 47, 3, 1, shadow)
+	if profile.face == 6:
+		block(63, 41, 7, 2, shadow.darkened(0.3))
+		block(76, 42, 6, 1, shadow.darkened(0.3))
+		block(65, 52, 3, 2, shadow)
+	if profile.face == 7:
+		block(63, 40, 5, 2, shadow)
+		block(78, 40, 5, 2, shadow)
+		block(66, 54, 13, 2, shadow.darkened(0.15))
 	if profile.base == 1:
 		block(66, 57, 2, 2, dark)
 		block(78, 57, 2, 2, dark)
@@ -189,6 +205,18 @@ func _draw_character() -> void:
 			block(72, 38, 1, 4, marking)
 			block(64, 50, 3, 3, marking)
 			block(78, 50, 3, 3, marking)
+		8:
+			block(62, 44, 2, 2, marking)
+			block(81, 44, 2, 2, marking)
+			block(64, 47, 2, 2, marking)
+			block(79, 47, 2, 2, marking)
+			block(66, 50, 2, 2, marking)
+			block(77, 50, 2, 2, marking)
+		9:
+			block(65, 36, 3, 2, marking)
+			block(77, 36, 3, 2, marking)
+			block(68, 38, 2, 3, marking)
+			block(75, 38, 2, 3, marking)
 	# Ten distinct hair silhouettes.
 	match profile.hair:
 		1:
@@ -226,3 +254,17 @@ func _draw_character() -> void:
 			block(74, 30, 10, 6, hair)
 			block(61, 35, 4, 6, hair)
 			block(80, 35, 4, 6, hair)
+		10:
+			block(59, 29, 27, 6, hair)
+			block(57, 33, 7, 11, hair)
+			block(81, 33, 7, 11, hair)
+			block(60, 25, 6, 7, hair)
+			block(69, 22, 7, 10, hair)
+			block(79, 25, 6, 8, hair)
+		11:
+			block(62, 29, 21, 5, hair)
+			block(60, 33, 6, 9, hair)
+			block(80, 33, 5, 8, hair)
+			block(58, 40, 4, 18, hair)
+			block(57, 55, 5, 3, trim)
+
