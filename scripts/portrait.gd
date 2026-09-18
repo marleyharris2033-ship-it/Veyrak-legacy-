@@ -61,7 +61,7 @@ func _draw_character() -> void:
 	var eyes = Color(VeyrakProfile.EYE_COLOURS[profile.eyes])
 	var outfit = int(profile.outfit)
 	var armour = Color(["30333d", "4b5158", "363d4c", "bab6a5", "354d48", "575365", "252b36", "4a4039"][outfit])
-	var trim = Color(["c5a65f", "a68b69", "b4bdc6", "c7a369", "9dba9c", "ad9fcd", "e0bd68", "b8865b"][outfit])
+	var trim = Color(["d5b675", "e8e2d2", "aab4bd", "6598cf", "b55252", "8666ad"][profile.accent])
 	var dark = Color("171d28")
 	var width = [14, 17, 20, 23, 26][profile.build] - (2 if profile.base == 1 else 0)
 	var face_width = [9, 8, 11, 9, 10, 8, 8, 10][profile.face]
@@ -144,10 +144,24 @@ func _draw_character() -> void:
 	block(68, 33, 2, 4, shadow)
 	block(72, 32, 2, 5, light)
 	block(76, 33, 2, 4, shadow)
+	# Veyrakian cranial ridge variants.
+	match profile.ridge:
+		1:
+			block(64, 35, 5, 2, light); block(76, 34, 5, 2, light)
+		2:
+			block(66, 33, 3, 4, light); block(76, 33, 3, 4, light)
+		3:
+			block(68, 32, 2, 5, shadow); block(75, 32, 2, 5, shadow)
+		4:
+			block(63, 36, 7, 2, light); block(76, 36, 7, 2, light)
+		5:
+			block(66, 35, 13, 1, light)
 	# Faces vary brow, cheekbone and jaw shapes.
 	var eye_y = 43 + (1 if profile.face == 3 else 0)
-	block(64, eye_y - 2, 6, 2, shadow.darkened(0.2))
-	block(75, eye_y - 2, 6, 2, shadow.darkened(0.2))
+	var brow_shift = [0, -1, 0, 1, -1, 1][profile.brow]
+	var brow_thickness = [2, 3, 2, 2, 2, 3][profile.brow]
+	block(64, eye_y - 2 + brow_shift, 6, brow_thickness, shadow.darkened(0.2))
+	block(75, eye_y - 2 - brow_shift, 6, brow_thickness, shadow.darkened(0.2))
 	block(65, eye_y, 5, 2, dark)
 	block(75, eye_y, 5, 2, dark)
 	block(67, eye_y, 2, 1, eyes)
