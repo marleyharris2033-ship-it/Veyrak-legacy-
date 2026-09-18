@@ -11,7 +11,6 @@ const GOLD = Color("efbb64")
 const BLUE = Color("a5b9ed")
 const KEYS = ["build", "face", "hair", "hair_colour", "eyes", "skin", "markings", "outfit"]
 const TITLES = ["BODY TYPE", "FACE", "HAIR STYLE", "HAIR COLOUR", "EYES", "SKIN TONE", "MARKINGS", "OUTFIT"]
-const FIXED = {"face": 0, "hair": 8, "markings": 4, "outfit": 0}
 var profile: Dictionary
 var initial_profile: Dictionary
 var canvas: Control
@@ -253,7 +252,7 @@ func _layout() -> void:
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.add_theme_font_size_override("font_size", 23)
 			_place(button, 28, 233 + i * 78, 290, 70)
-	var build_width = [0.86, 0.94, 1.0, 1.1][profile.build]
+	var build_width = [0.86, 0.94, 1.0, 1.1, 1.18][profile.build]
 	var character_rect = Rect2(169, 293, 430, 560) if portrait_layout else Rect2(444, 168, 458, 672)
 	character_rect.position.x -= character_rect.size.x * (build_width - 1.0) * 0.5
 	character_rect.size.x *= build_width
@@ -291,8 +290,8 @@ func _layout() -> void:
 	_place(status, 24 if portrait_layout else 360, 2013 if portrait_layout else 981, 720 if portrait_layout else 820, 30 if portrait_layout else 43)
 	if modal.visible: modal.hide()
 
-func _available(key: String, index: int) -> bool:
-	return not FIXED.has(key) or FIXED[key] == index
+func _available(_key: String, _index: int) -> bool:
+	return true
 
 func _update() -> void:
 	for i in range(categories.size()): categories[i].set_pressed_no_signal(i == active_category)
@@ -317,7 +316,7 @@ func _update() -> void:
 	warrior_material.set_shader_parameter("change_skin", profile.skin != 2)
 	warrior_material.set_shader_parameter("change_hair", profile.hair_colour != 0)
 	warrior_material.set_shader_parameter("change_eyes", profile.eyes != 1)
-	status.text = saved_notice if not saved_notice.is_empty() else "Locked styles need their artwork. Tap a heading to inspect choices."
+	status.text = saved_notice if not saved_notice.is_empty() else "Every appearance option is unlocked. Tap a heading or use the arrows to customise."
 
 func _select(key: String, index: int) -> void:
 	if not _available(key, index):
@@ -328,9 +327,6 @@ func _select(key: String, index: int) -> void:
 	_layout()
 
 func _cycle(key: String, direction: int) -> void:
-	if FIXED.has(key):
-		_open_choices(key)
-		return
 	_select(key, posmod(profile[key] + direction, VeyrakProfile.OPTIONS[key].size()))
 
 func _category(index: int) -> void:
@@ -375,7 +371,7 @@ func _message(title: String, message: String) -> void:
 func _open_choices(key: String) -> void:
 	selected_row = key
 	_clear_modal(TITLES[KEYS.find(key)])
-	var tip = _text(modal_content, "Choose a look." if not FIXED.has(key) else "One finished style. Locked variants need new artwork.", 16, BLUE)
+	var tip = _text(modal_content, "Choose a look. Every option is available.", 16, BLUE)
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var choice_scroll = ScrollContainer.new()
 	choice_scroll.custom_minimum_size.y = minf(260, get_viewport_rect().size.y - 190)
@@ -387,12 +383,10 @@ func _open_choices(key: String) -> void:
 		var available = _available(key, index)
 		var title = VeyrakProfile.OPTIONS[key][index]
 		if index == profile[key]: title += "  ✓"
-		if not available: title += "  ·  Coming next"
 		var button = _button(choices, title, func():
 			_select(key, index)
 			modal.hide()
 		)
-		button.disabled = not available
 		button.custom_minimum_size.y = 48
 		button.add_theme_font_size_override("font_size", 17)
 	var close = _button(modal_content, "DONE", func(): modal.hide())
