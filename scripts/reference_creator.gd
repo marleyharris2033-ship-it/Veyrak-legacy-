@@ -5,7 +5,6 @@ const Tile = preload("res://scripts/appearance_tile.gd")
 const OrnateButton = preload("res://scripts/ornate_button.gd")
 const BACKGROUND = preload("res://assets/creator/veyathuun-background-v1.png")
 const CHARACTER = preload("res://assets/creator/veyrakian-default-v1.png")
-const PixelPortrait = preload("res://scripts/portrait.gd")
 const REFERENCE = preload("res://assets/creator/layout-reference.jpeg")
 const PALETTE = preload("res://assets/creator/character_palette.gdshader")
 const GOLD = Color("efbb64")
@@ -20,7 +19,6 @@ var scroll: ScrollContainer
 var background: TextureRect
 var scene_background: TextureRect
 var warrior: TextureRect
-var live_character: Control
 var warrior_material: ShaderMaterial
 var name_input: LineEdit
 var status: Label
@@ -148,10 +146,6 @@ func _build() -> void:
 	warrior_material = ShaderMaterial.new()
 	warrior_material.shader = PALETTE
 	warrior.material = warrior_material
-	live_character = PixelPortrait.new()
-	live_character.show_face = false
-	live_character.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(live_character)
 	var category_names = ["APPEARANCE", "MARKINGS", "EYES", "OUTFIT", "NAME"]
 	for i in range(5):
 		var button = _button(canvas, category_names[i], func(): _category(i))
@@ -320,7 +314,6 @@ func _update() -> void:
 				var colours = VeyrakProfile.SKIN_COLOURS if key == "skin" else (VeyrakProfile.HAIR_COLOURS if key == "hair_colour" else VeyrakProfile.EYE_COLOURS)
 				tile.tint = Color(colours[tile.option_index])
 			tile.queue_redraw()
-	live_character.update_character(profile)
 	warrior_material.set_shader_parameter("skin_tone", Color(VeyrakProfile.SKIN_COLOURS[profile.skin]))
 	warrior_material.set_shader_parameter("hair_tone", Color(VeyrakProfile.HAIR_COLOURS[profile.hair_colour]))
 	warrior_material.set_shader_parameter("eye_tone", Color(VeyrakProfile.EYE_COLOURS[profile.eyes]))
