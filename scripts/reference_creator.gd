@@ -50,9 +50,9 @@ func default_art_profile() -> Dictionary:
 func _ready() -> void:
 	if OS.has_feature("web"):
 		get_window().content_scale_factor = maxf(1.0, float(JavaScriptBridge.eval("window.devicePixelRatio || 1")))
-	var saved = VeyrakProfile.load_saved()
+	var saved = SaveSlots.current_profile()
 	profile = saved if saved.get("art_revision", 0) == 1 else default_art_profile()
-	if saved.get("art_revision", 0) != 1 and FileAccess.file_exists(VeyrakProfile.SAVE_PATH):
+	if saved.get("art_revision", 0) != 1 and not saved.name.is_empty():
 		profile.name = saved.name
 		saved_notice = "Your earlier character is kept until you confirm this new appearance."
 	initial_profile = profile.duplicate()
@@ -428,7 +428,7 @@ func _confirm() -> void:
 	if profile.name.is_empty():
 		_edit_name()
 		return
-	var error = VeyrakProfile.save(profile)
+	var error = SaveSlots.save_character(profile)
 	if error != OK:
 		_message("Could not save", "Your browser could not save the character. Try again outside private browsing.")
 		return
@@ -441,7 +441,7 @@ func _confirm() -> void:
 	var download = _button(modal_content, "DOWNLOAD CHARACTER BACKUP", _download)
 	download.custom_minimum_size.y = 48
 	download.add_theme_font_size_override("font_size", 16)
-	var close = _button(modal_content, "RETURN TO CHARACTER", func(): modal.hide())
+	var close = _button(modal_content, "RETURN TO SAVE SLOTS", _leave_creator)
 	close.custom_minimum_size.y = 48
 	close.add_theme_font_size_override("font_size", 16)
 	_show_modal()
@@ -454,18 +454,26 @@ func _download() -> void:
 		var file = FileAccess.open(OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS).path_join("veyrak-character.json"), FileAccess.WRITE)
 		if file != null: file.store_buffer(bytes)
 
+func _leave_creator() -> void:
+	SaveSlots.return_to_slots = true
+	get_tree().change_scene_to_file("res://home.tscn")
+
 func _back() -> void:
-	_clear_modal("VEYRAK · LEGACY")
-	var body = _text(modal_content, "Your character draft stays here while you explore the menu.", 18, BLUE)
+	if profile == initial_profile:
+		_leave_creator()
+		return
+	_clear_modal("SAVE YOUR CHARACTER?")
+	var body = _text(modal_content, "Save this draft before returning to your three slots?", 18, BLUE)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var resume = _button(modal_content, "RETURN TO CHARACTER", func(): modal.hide())
-	resume.custom_minimum_size.y = 48
-	var restore = _button(modal_content, "RESTORE LAST CONFIRMED LOOK", func():
-		profile = initial_profile.duplicate()
-		name_input.text = profile.name
-		_update()
-		_layout()
+	var save = _button(modal_content, "SAVE AND RETURN", func():
+		profile.name = profile.name.strip_edges()
+		if SaveSlots.save_character(profile) == OK: _leave_creator()
+		else: _message("Could not save", "Your draft is still open. Please try again.")
 	)
-	restore.custom_minimum_size.y = 48
-	restore.add_theme_font_size_override("font_size", 15)
+	save.custom_minimum_size.y = 48
+	var discard = _button(modal_content, "LEAVE WITHOUT SAVING", _leave_creator)
+	discard.custom_minimum_size.y = 48
+	discard.add_theme_font_size_override("font_size", 16)
+	var cancel = _button(modal_content, "KEEP EDITING", func(): modal.hide())
+	cancel.custom_minimum_size.y = 48
 	_show_modal()
