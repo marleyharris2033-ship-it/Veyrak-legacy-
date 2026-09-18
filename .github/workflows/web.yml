@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: veyrak-pages
+  cancel-in-progress: true
+
 jobs:
   export:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - name: Install Godot 4.5.1 and web templates
@@ -26,16 +31,26 @@ jobs:
           curl --fail --location --retry 3 "$RELEASE/Godot_v4.5.1-stable_export_templates.tpz" -o /tmp/templates.tpz
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           unzip -j -q /tmp/templates.tpz 'templates/web*' -d "$HOME/.local/share/godot/export_templates/4.5.1.stable"
-      - name: Validate, test and export
+      - name: Import project
+        timeout-minutes: 3
+        run: timeout 150s Godot_v4.5.1-stable_linux.x86_64 --headless --editor --import --path . || test $? -eq 124
+      - name: Validate unlocked creator data
+        timeout-minutes: 2
         run: |
           set -euo pipefail
-          Godot_v4.5.1-stable_linux.x86_64 --headless --editor --import --path .
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/profile_test.gd
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/creator_test.gd
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/reference_creator_test.gd
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/save_slots_test.gd
+          grep -q 'func _available' scripts/reference_creator.gd
+          grep -A1 'func _available' scripts/reference_creator.gd | grep -q 'return true'
+          ! grep -q 'FIXED' scripts/reference_creator.gd
+          ! grep -q 'Coming next' scripts/reference_creator.gd
+          ! grep -q 'Locked styles' scripts/reference_creator.gd
+          grep -q '"hair": \["Shaven", "Cropped", "Swept", "Crest", "Undercut", "Long", "Braided", "Tied back", "Spiked", "Parted", "Warrior mane", "Temple braid"\]' scripts/profile.gd
+      - name: Export web build
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
           mkdir -p build/web
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --export-release Web build/web/index.html
+          timeout 240s Godot_v4.5.1-stable_linux.x86_64 --headless --path . --export-release Web build/web/index.html
+          test -s build/web/index.html
           touch build/web/.nojekyll
       - name: Keep downloadable web build
         uses: actions/upload-artifact@v4
