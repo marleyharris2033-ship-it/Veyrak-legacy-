@@ -4,14 +4,14 @@ extends RefCounted
 const SAVE_PATH = "user://character.json"
 const OPTIONS = {
 	"base": ["Male", "Female"],
-	"face": ["Resolute", "Angular", "Broad", "Noble", "Weathered", "Sleek"],
-	"hair": ["Shaven", "Cropped", "Swept", "Crest", "Undercut", "Long", "Braided", "Tied back", "Spiked", "Parted"],
+	"face": ["Resolute", "Angular", "Broad", "Noble", "Weathered", "Sleek", "Sharp", "Stoic"],
+	"hair": ["Shaven", "Cropped", "Swept", "Crest", "Undercut", "Long", "Braided", "Tied back", "Spiked", "Parted", "Warrior mane", "Temple braid"],
 	"hair_colour": ["Obsidian", "Silver", "Ash", "Copper", "Sand", "Midnight"],
 	"skin": ["Pale stone", "Silver grey", "Warm ash", "Slate", "Umber", "Deep stone"],
-	"markings": ["None", "Temple lines", "Brow sigil", "Twin stripes", "Chevrons", "Starborn", "Warpaint", "Lineage"],
+	"markings": ["None", "Temple lines", "Brow sigil", "Twin stripes", "Chevrons", "Starborn", "Warpaint", "Lineage", "Core veins", "Crown lines"],
 	"eyes": ["Gold", "Ice blue", "Jade", "Violet", "Amber", "Silver"],
-	"build": ["Lean", "Athletic", "Powerful", "Heavy"],
-	"outfit": ["Vanguard", "Wayfarer", "Sentinel", "Envoy", "Scout", "Initiate"]
+	"build": ["Lean", "Athletic", "Powerful", "Heavy", "Vanguard"],
+	"outfit": ["Vanguard", "Wayfarer", "Sentinel", "Envoy", "Scout", "Initiate", "High Guard", "Frontier"]
 }
 const SKIN_COLOURS = ["c5c5bb", "a8afb1", "a89c90", "77848b", "80716a", "535d67"]
 const HAIR_COLOURS = ["232632", "dddcd0", "777b81", "965a41", "bfa575", "303d61"]
