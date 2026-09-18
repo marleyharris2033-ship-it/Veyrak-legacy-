@@ -20,12 +20,9 @@ var art_caption: Label
 var art_mode = true
 var art_button: Button
 var customise_button: Button
+var page_scroll: ScrollContainer
 
 func _ready() -> void:
-	# Web canvas dimensions use physical pixels. Keep controls sized in CSS pixels
-	# on Retina iPhones while retaining the sharper high-DPI rendering.
-	if OS.has_feature("web"):
-		get_window().content_scale_factor = maxf(1.0, float(JavaScriptBridge.eval("window.devicePixelRatio || 1")))
 	_build_theme()
 	_build_interface()
 	get_viewport().size_changed.connect(_resize_layout)
@@ -82,13 +79,17 @@ func _button(text: String, action: Callable) -> Button:
 	return button
 
 func _build_interface() -> void:
-	var scroll = ScrollContainer.new()
-	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
+	page_scroll = ScrollContainer.new()
+	page_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	page_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	page_scroll.scroll_deadzone = 6
+	page_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(page_scroll)
 	outer_margin = MarginContainer.new()
 	outer_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(outer_margin)
+	page_scroll.add_child(outer_margin)
 	var page = VBoxContainer.new()
 	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	outer_margin.add_child(page)
