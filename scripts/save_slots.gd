@@ -62,9 +62,16 @@ func open_slot(slot: int) -> Error:
 	if slot < 1 or slot > SLOT_COUNT: return ERR_INVALID_PARAMETER
 	var value = read_slot(slot)
 	if value.get("invalid", false): return ERR_FILE_CORRUPT
-	var point: Dictionary = value.get("checkpoint", {"scene": CREATOR, "label": "Character creation", "state": {}})
-	var scene = str(point.get("scene", ""))
-	if not scene.begins_with("res://") or not scene.ends_with(".tscn") or not ResourceLoader.exists(scene): return ERR_FILE_NOT_FOUND
+	# An empty slot is always a new character and must enter the creator.
+	var point: Dictionary = {"scene": CREATOR, "label": "Character creation", "state": {}}
+	if not value.is_empty():
+		point = value.get("checkpoint", point)
+	var scene = str(point.get("scene", CREATOR))
+	# Old/incomplete saves should still be recoverable through character creation.
+	if not scene.begins_with("res://") or not scene.ends_with(".tscn") or not ResourceLoader.exists(scene):
+		scene = CREATOR
+		point = {"scene": CREATOR, "label": "Character creation", "state": {}}
+	if not ResourceLoader.exists(CREATOR): return ERR_FILE_NOT_FOUND
 	active_slot = slot
 	checkpoint = point
 	return get_tree().change_scene_to_file(scene)
