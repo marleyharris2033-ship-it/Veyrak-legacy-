@@ -21,6 +21,7 @@ var art_mode = true
 var art_button: Button
 var customise_button: Button
 var page_scroll: ScrollContainer
+var summary: Label
 
 func _ready() -> void:
 	_build_theme()
@@ -161,6 +162,11 @@ func _build_interface() -> void:
 	_add_select(editor, "markings", "Markings")
 	editor.add_child(_label("03  /  ATTIRE", 15, GOLD))
 	_add_select(editor, "outfit", "Outfit")
+	editor.add_child(_label("04  /  YOUR VEYRAKIAN", 15, GOLD))
+	summary = _label("", 15, Color("c7d2d9"))
+	summary.add_theme_stylebox_override("normal", _style(Color("0d1721"), Color("4d493e"), 6))
+	summary.custom_minimum_size.y = 92
+	editor.add_child(summary)
 	var actions = HBoxContainer.new()
 	actions.add_child(_button("Randomise", _randomise))
 	actions.add_child(_button("Restore saved", _restore))
@@ -255,6 +261,8 @@ func _sync_controls() -> void:
 
 func _refresh() -> void:
 	portrait.update_character(profile)
+	if is_instance_valid(summary):
+		summary.text = "%s  •  %s build\n%s face  •  %s hair  •  %s markings\n%s eyes  •  %s attire" % [VeyrakProfile.OPTIONS.base[profile.base], VeyrakProfile.OPTIONS.build[profile.build], VeyrakProfile.OPTIONS.face[profile.face], VeyrakProfile.OPTIONS.hair[profile.hair], VeyrakProfile.OPTIONS.markings[profile.markings], VeyrakProfile.OPTIONS.eyes[profile.eyes], VeyrakProfile.OPTIONS.outfit[profile.outfit]]
 	character_label.text = profile.name.strip_edges() if not profile.name.strip_edges().is_empty() else "Your Veyrakian"
 	if is_instance_valid(status):
 		status.text = "Unsaved changes" if profile != saved_profile else "Choose your appearance, then save your character."
