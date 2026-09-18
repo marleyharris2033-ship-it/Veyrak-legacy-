@@ -10,12 +10,13 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	assert(not creator.portrait_layout)
-	assert(creator.rows.size() == 8)
+	assert(creator.rows.size() == creator.KEYS.size())
 	assert(creator.categories.size() == 5)
 	assert(creator.warrior.texture.get_image().has_mipmaps() == false)
 	assert(creator.rows.hair.tiles.any(func(tile): return tile.selected and tile.option_index == creator.profile.hair))
-	assert(not creator._available("hair", 0))
-	assert(creator._available("hair", 8))
+	for key in VeyrakProfile.OPTIONS:
+		for index in range(VeyrakProfile.OPTIONS[key].size()):
+			assert(creator._available(key, index), "Every creator option must be unlocked: %s %s" % [key, index])
 	creator._select("skin", 4)
 	assert(creator.profile.skin == 4)
 	assert(creator.warrior_material.get_shader_parameter("change_skin") == true)
@@ -56,6 +57,6 @@ func _run() -> void:
 		file.close()
 	else:
 		DirAccess.remove_absolute(VeyrakProfile.SAVE_PATH)
-	print("Reference layout, locked art, live palette/body controls, mobile pickers and save/reload passed.")
+	print("Reference layout, all-unlocked customisation, live renderer, mobile pickers and save/reload passed.")
 	creator.queue_free()
 	quit()
