@@ -1,6 +1,6 @@
 extends Control
-## Code-drawn prototype layers. Replace this renderer with approved layered art later.
-## Character data and creator controls do not depend on this drawing implementation.
+## Layered low-resolution Veyrakian renderer used by the creator and future gameplay portrait pipeline.
+## Every creator choice changes silhouette, facial detail, markings, colour or equipment.
 
 var profile = VeyrakProfile.defaults()
 var show_face = false
@@ -65,11 +65,16 @@ func _draw_character() -> void:
 	var dark = Color("171d28")
 	var width = [14, 17, 20, 23, 26][profile.build] - (2 if profile.base == 1 else 0)
 	var face_width = [9, 8, 11, 9, 10, 8, 8, 10][profile.face]
-	# Optional cloak / robe silhouettes.
+	# Outfit-specific rear silhouettes.
 	if outfit == 1 or outfit == 3:
 		block(49, 67, 46, 62, armour.darkened(0.3))
 		block(51, 70, 3, 56, trim.darkened(0.4))
 		block(89, 70, 3, 56, trim.darkened(0.4))
+	if outfit == 5:
+		block(54, 68, 37, 55, armour.darkened(0.22))
+		block(57, 72, 3, 47, trim.darkened(0.3))
+	if outfit == 7:
+		block(52, 73, 41, 46, armour.darkened(0.34))
 	# Legs, boots and segmented armour.
 	block(58, 99, 13, 32, dark)
 	block(74, 99, 13, 32, dark)
@@ -111,9 +116,19 @@ func _draw_character() -> void:
 		block(66 + width, 64, 16, 10, dark)
 		block(66 - width - 4, 65, 14, 3, trim)
 		block(67 + width, 65, 14, 3, trim)
+	if outfit == 0:
+		block(61, 67, 23, 4, trim.darkened(0.25))
+		block(63, 73, 5, 12, armour.lightened(0.12))
+		block(78, 73, 5, 12, armour.lightened(0.12))
+	if outfit == 1:
+		block(62, 86, 21, 5, trim.darkened(0.2))
+		block(68, 91, 9, 27, armour.darkened(0.15))
 	if outfit == 2:
 		block(56, 97, 10, 16, armour)
 		block(79, 97, 10, 16, armour)
+		block(57, 67, 31, 7, armour.lightened(0.12))
+		block(61, 75, 5, 16, trim.darkened(0.28))
+		block(80, 75, 5, 16, trim.darkened(0.28))
 	if outfit == 3 or outfit == 5:
 		block(61, 100, 23, 18, armour)
 		block(70, 101, 4, 17, trim)
@@ -126,6 +141,9 @@ func _draw_character() -> void:
 		block(58, 87, 29, 4, trim)
 		block(63, 91, 19, 12, armour.darkened(0.18))
 	if outfit == 4:
+		block(62, 66, 21, 5, armour.lightened(0.16))
+		block(60, 85, 7, 18, armour.darkened(0.18))
+		block(78, 85, 7, 18, armour.darkened(0.18))
 		for i in range(7):
 			block(59 + i * 3, 66 + i * 4, 5, 5, trim.darkened(0.3))
 	# Hair behind the head.
@@ -133,6 +151,18 @@ func _draw_character() -> void:
 		block(58, 35, 28, 32, hair.darkened(0.2))
 	if profile.hair == 7:
 		block(80, 42, 9, 24, hair)
+	# Build-specific anatomy accents so body types read beyond shoulder width.
+	if profile.build == 0:
+		block(66, 76, 3, 13, light); block(77, 76, 3, 13, light)
+	elif profile.build == 2:
+		block(63, 70, 7, 3, light); block(76, 70, 7, 3, light)
+	elif profile.build == 3:
+		block(60, 69, 10, 4, light); block(76, 69, 10, 4, light)
+		block(66, 82, 14, 3, shadow)
+	elif profile.build == 4:
+		block(57, 68, 13, 5, light); block(76, 68, 13, 5, light)
+		block(64, 80, 18, 4, shadow)
+		block(65, 86, 16, 3, light)
 	# Species-specific ears and subtly ridged brow.
 	block(70 - face_width - 3, 42, 4, 9, shadow)
 	block(72 + face_width, 42, 4, 9, shadow)
@@ -169,15 +199,24 @@ func _draw_character() -> void:
 	block(72, 44, 2, 6, light)
 	block(70, 50, 5, 1, shadow)
 	block(69, 54, 7, 1, shadow.darkened(0.2))
+	if profile.face == 0:
+		block(66, 52, 2, 2, light); block(77, 52, 2, 2, light)
 	if profile.face == 1 or profile.face == 5:
 		block(63, 49, 4, 2, shadow)
 		block(78, 49, 4, 2, shadow)
 	if profile.face == 2:
-		block(63, 53, 3, 3, shadow)
-		block(79, 53, 3, 3, shadow)
+		block(62, 51, 4, 4, shadow)
+		block(79, 51, 4, 4, shadow)
+		block(68, 55, 9, 2, shadow.darkened(0.15))
+	if profile.face == 3:
+		block(66, 48, 2, 4, light); block(78, 48, 2, 4, light)
+		block(70, 54, 5, 2, shadow)
 	if profile.face == 4:
 		block(64, 45, 1, 7, light)
 		block(78, 47, 3, 1, shadow)
+	if profile.face == 5:
+		block(64, 52, 4, 1, light); block(78, 52, 4, 1, light)
+		block(71, 55, 4, 1, shadow)
 	if profile.face == 6:
 		block(63, 41, 7, 2, shadow.darkened(0.3))
 		block(76, 42, 6, 1, shadow.darkened(0.3))
