@@ -1,6 +1,7 @@
 extends Control
 
 const Portrait = preload("res://scripts/portrait.gd")
+const ArtStage = preload("res://scripts/art_stage.gd")
 const GOLD = Color("d5b675")
 const INK = Color("0d151f")
 var profile = VeyrakProfile.load_saved()
@@ -14,6 +15,11 @@ var selectors: Dictionary = {}
 var swatches: Dictionary = {}
 var outer_margin: MarginContainer
 var saved_profile = profile.duplicate()
+var art_stage: Control
+var art_caption: Label
+var art_mode = true
+var art_button: Button
+var customise_button: Button
 
 func _ready() -> void:
 	# Web canvas dimensions use physical pixels. Keep controls sized in CSS pixels
@@ -89,6 +95,19 @@ func _build_interface() -> void:
 	page.add_child(_label("V E Y R A K   /   L E G A C Y", 18, GOLD))
 	page.add_child(_label("Forge your legacy", 34))
 	page.add_child(_label("A child of Veyathuun. A future of your own.", 16, Color("a3b2bd")))
+	var modes = HBoxContainer.new()
+	art_button = _button("Artwork preview", func(): _set_art_mode(true))
+	customise_button = _button("Customise", func(): _set_art_mode(false))
+	art_button.toggle_mode = true
+	customise_button.toggle_mode = true
+	modes.add_child(art_button)
+	modes.add_child(customise_button)
+	page.add_child(modes)
+	art_stage = ArtStage.new()
+	art_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.add_child(art_stage)
+	art_caption = _label("DEFAULT VEYRAKIAN  /  VEYATHUUN\nFirst artwork preview. Matching appearance variations are being created. Customise opens the original working preview.", 15, Color("d5c5a3"))
+	page.add_child(art_caption)
 	layout = GridContainer.new()
 	layout.add_theme_constant_override("h_separation", 24)
 	layout.add_theme_constant_override("v_separation", 20)
@@ -153,7 +172,16 @@ func _build_interface() -> void:
 	editor.add_child(_button("Download character backup", _download))
 	status = _label("Choose your appearance, then save your character.", 15, Color("a8b9c4"))
 	editor.add_child(status)
-	page.add_child(_label("CHARACTER CREATOR  /  0.1    •    Veyathuun awaits", 13, Color("9c9b91")))
+	page.add_child(_label("CHARACTER CREATOR  /  0.2    •    Veyathuun awaits", 13, Color("9c9b91")))
+	_set_art_mode(true)
+
+func _set_art_mode(enabled: bool) -> void:
+	art_mode = enabled
+	art_stage.visible = enabled
+	art_caption.visible = enabled
+	layout.visible = not enabled
+	art_button.set_pressed_no_signal(enabled)
+	customise_button.set_pressed_no_signal(not enabled)
 
 func _add_select(parent: VBoxContainer, key: String, title: String) -> void:
 	var row = HBoxContainer.new()
@@ -204,6 +232,7 @@ func _add_swatch(parent: VBoxContainer, key: String, title: String, colours: Arr
 
 func _resize_layout() -> void:
 	var width = get_viewport_rect().size.x
+	art_stage.custom_minimum_size.y = clampf(get_viewport_rect().size.y - 240.0, 380.0, 760.0)
 	layout.columns = 2 if width >= 820 else 1
 	var margin = 30 if width >= 820 else 12
 	for side in ["left", "right", "top", "bottom"]:

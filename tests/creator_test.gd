@@ -9,6 +9,13 @@ func _run() -> void:
 	root.add_child(creator)
 	await process_frame
 	await process_frame
+	assert(creator.art_mode and creator.art_stage.visible, "Start with the new artwork preview")
+	assert(not creator.layout.visible, "Do not imply the flat sprite renders all appearance variations")
+	var before_art_switch: Dictionary = creator.profile.duplicate()
+	creator._set_art_mode(false)
+	await process_frame
+	await process_frame
+	assert(creator.profile == before_art_switch, "Art mode must not modify the saved character")
 	assert(creator.layout.columns == 1, "Phone layout must stack")
 	for key in creator.selectors:
 		var control: Control = creator.selectors[key]

@@ -26,6 +26,8 @@ static func validate(value: Variant) -> Dictionary:
 		return result
 	if value.get("name") is String:
 		result.name = value.name.strip_edges().left(24)
+	if value.get("art_revision") == 1:
+		result.art_revision = 1
 	for key in OPTIONS:
 		var index: Variant = value.get(key)
 		if (index is int or index is float) and is_finite(float(index)):

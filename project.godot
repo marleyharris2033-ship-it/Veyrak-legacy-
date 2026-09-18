@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="Veyrak: Legacy"
-run/main_scene="res://creator.tscn"
+run/main_scene="res://reference_creator.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [display]
