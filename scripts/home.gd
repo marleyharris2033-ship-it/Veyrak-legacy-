@@ -9,8 +9,6 @@ var screen = "home"
 var notice: Label
 
 func _ready() -> void:
-	if OS.has_feature("web"):
-		get_window().content_scale_factor = maxf(1.0, float(JavaScriptBridge.eval("window.devicePixelRatio || 1")))
 	theme = Theme.new()
 	theme.default_font = preload("res://assets/fonts/DejaVuSansMono.ttf")
 	theme.default_font_size = 20
