@@ -4,21 +4,24 @@ extends RefCounted
 const SAVE_PATH = "user://character.json"
 const OPTIONS = {
 	"base": ["Male", "Female"],
-	"face": ["Resolute", "Angular", "Broad", "Noble", "Weathered", "Sleek"],
-	"hair": ["Shaven", "Cropped", "Swept", "Crest", "Undercut", "Long", "Braided", "Tied back", "Spiked", "Parted"],
+	"face": ["Resolute", "Angular", "Broad", "Noble", "Weathered", "Sleek", "Rugged", "Youthful"],
+	"hair": ["Shaven", "Cropped", "Swept", "Crest", "Undercut", "Long", "Braided", "Tied back", "Spiked", "Parted", "Warrior Mane", "Temple Braid"],
 	"hair_colour": ["Obsidian", "Silver", "Ash", "Copper", "Sand", "Midnight"],
 	"skin": ["Pale stone", "Silver grey", "Warm ash", "Slate", "Umber", "Deep stone"],
-	"markings": ["None", "Temple lines", "Brow sigil", "Twin stripes", "Chevrons", "Starborn", "Warpaint", "Lineage"],
+	"markings": ["None", "Temple lines", "Brow sigil", "Twin stripes", "Chevrons", "Starborn", "Warpaint", "Lineage", "Core Veins", "Crown Lines"],
 	"eyes": ["Gold", "Ice blue", "Jade", "Violet", "Amber", "Silver"],
-	"build": ["Lean", "Athletic", "Powerful", "Heavy"],
-	"outfit": ["Vanguard", "Wayfarer", "Sentinel", "Envoy", "Scout", "Initiate"]
+	"build": ["Lean", "Athletic", "Powerful", "Heavy", "Vanguard"],
+	"outfit": ["Vanguard", "Wayfarer", "Sentinel", "Envoy", "Scout", "Initiate", "High Guard", "Frontier"],
+	"ridges": ["Smooth", "Temporal", "Swept", "Crown", "Ancestral"],
+	"accent": ["Veyathuun Gold", "Ivory", "Steel", "Azure", "Crimson", "Amethyst"]
 }
+const ACCENT_COLOURS = ["d5ad65", "eee7ce", "91a2b0", "4b98df", "bf4653", "ab7cd7"]
 const SKIN_COLOURS = ["c5c5bb", "a8afb1", "a89c90", "77848b", "80716a", "535d67"]
 const HAIR_COLOURS = ["232632", "dddcd0", "777b81", "965a41", "bfa575", "303d61"]
 const EYE_COLOURS = ["f1ce73", "99dbf1", "82d0ac", "c6a3f3", "e59a5e", "d8e4ea"]
 
 static func defaults() -> Dictionary:
-	return {"version": 1, "species": "Veyrakian", "homeworld": "Veyathuun", "name": "", "base": 0, "face": 0, "hair": 1, "hair_colour": 0, "skin": 0, "markings": 1, "eyes": 0, "build": 2, "outfit": 0}
+	return {"version": 1, "species": "Veyrakian", "homeworld": "Veyathuun", "name": "", "base": 0, "face": 0, "hair": 1, "hair_colour": 0, "skin": 0, "markings": 1, "eyes": 0, "build": 2, "outfit": 0, "ridges": 1, "accent": 0}
 
 static func validate(value: Variant) -> Dictionary:
 	var result = defaults()

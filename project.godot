@@ -3,13 +3,19 @@ config_version=5
 
 [application]
 config/name="Veyrak: Legacy"
-run/main_scene="res://reference_creator.tscn"
+run/main_scene="res://home.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
+[autoload]
+SaveSlots="*res://scripts/save_slots.gd"
+
 [display]
-window/size/viewport_width=1100
-window/size/viewport_height=780
-window/stretch/mode="disabled"
+window/size/viewport_width=390
+window/size/viewport_height=390
+window/size/window_width_override=1100
+window/size/window_height_override=780
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/stretch/scale_mode="fractional"
 window/handheld/orientation=6
 

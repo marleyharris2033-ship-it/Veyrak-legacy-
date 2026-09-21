@@ -1,4 +1,4 @@
-name: Build character creator
+name: Build Veyrak Legacy
 
 on:
   push:
@@ -29,10 +29,10 @@ jobs:
       - name: Validate, test and export
         run: |
           set -euo pipefail
-          Godot_v4.5.1-stable_linux.x86_64 --headless --editor --import --path .
+          Godot_v4.5.1-stable_linux.x86_64 --headless --editor --import --path . --quit
           Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/profile_test.gd
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/creator_test.gd
-          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/reference_creator_test.gd
+          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/opening_test.gd
+          Godot_v4.5.1-stable_linux.x86_64 --headless --path . --script tests/save_slots_test.gd
           mkdir -p build/web
           Godot_v4.5.1-stable_linux.x86_64 --headless --path . --export-release Web build/web/index.html
           touch build/web/.nojekyll

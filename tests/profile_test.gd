@@ -4,7 +4,7 @@ func _initialize() -> void:
 	var clean = VeyrakProfile.validate({"name": "  Marley  ", "skin": -5, "face": 99, "outfit": "broken", "species": "Wrong"})
 	assert(clean.name == "Marley")
 	assert(clean.skin == 0)
-	assert(clean.face == 5)
+	assert(clean.face == 7)
 	assert(clean.outfit == 0)
 	assert(clean.species == "Veyrakian")
 	assert(VeyrakProfile.validate(null) == VeyrakProfile.defaults())
