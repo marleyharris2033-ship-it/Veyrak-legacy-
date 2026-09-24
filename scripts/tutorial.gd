@@ -212,6 +212,7 @@ func _advance() -> void:
 func attack() -> void:
 	if cooldown > 0 or stage not in [2,3]: return
 	cooldown = .4
+	if profile.hero_id == "kaerun": actor.play_attack()
 	var reach = 330.0 if profile.hero_id in ["nyvara","dhoran","ilyra"] else 125.0
 	_damage(24*float(stats()["Melee power"]),reach,GOLD)
 
@@ -242,6 +243,7 @@ func ability() -> void:
 	var id: String = profile.hero_id
 	var names = {"kaerun":"Sovereign Impact","vaelis":"Phase Sever","dhoran":"Bastion Engine","saevra":"Gravity Crown","nyvara":"Dead Horizon","ilyra":"Convergence"}
 	var was_ability_lesson = stage == 3
+	if id == "kaerun": actor.play_signature()
 	if id == "vaelis": actor.position = (target.position+Vector2(-60,25)).clamp(BOUNDS.position,BOUNDS.end)
 	if id == "saevra": target.position = actor.position+Vector2(65,0)
 	if id == "kaerun": actor.position = (target.position+Vector2(-80,25)).clamp(BOUNDS.position,BOUNDS.end)
