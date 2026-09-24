@@ -13,7 +13,7 @@ var hero_id = "kaerun"
 
 func _ready() -> void:
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	show_hero(hero_id)
@@ -22,5 +22,10 @@ func show_hero(id: String) -> void:
 	hero_id = id
 	var atlas = AtlasTexture.new()
 	atlas.atlas = ROSTER
-	atlas.region = REGIONS[maxi(0,VeyrakHeroes.index_of(id))]
+	var hero_index = VeyrakHeroes.index_of(id)
+	if hero_index < 0 or hero_index >= REGIONS.size():
+		hero_index = 0
+	atlas.region = REGIONS[hero_index]
+	# Keep the portrait crop contained inside its HUD frame.
+	clip_contents = true
 	texture = atlas
