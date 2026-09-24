@@ -18,16 +18,29 @@ func run() -> void:
 	home._open_slot(1)
 	await process_frame
 	check(home.screen=="creator","Empty slot must enter creator")
-	for key in VeyrakProfile.OPTIONS:
-		for i in range(VeyrakProfile.OPTIONS[key].size()):
-			home.profile[key]=i
-			home._refresh()
-			check(home.appearance.profile[key]==i,"Appearance selection failed: "+key)
-	home.name_input.text = "Test Veyrakian"
+	for id in VeyrakHeroes.IDS:
+		home.selector.select_hero(id)
+		check(home.profile.hero_id == id,"Hero selection failed: "+id)
+		var total = 0
+		for rating in VeyrakHeroes.record(id).stats: total += rating
+		check(total == 36,"Unequal starting budget: "+id)
+		check(VeyrakProfile.validate(home.profile).hero_id == id,"Hero must survive validation")
+	for dimensions in [Vector2i(390,844),Vector2i(844,390)]:
+		root.size = dimensions
+		await process_frame
+		await process_frame
+		home._responsive()
+		await process_frame
+		check(home.selector.spread.vertical == (home.selector.size.x < 760),"Dossier responsive layout")
+		for button in home.selector.tabs:
+			check(button.size.y >= 48,"Hero button touch height")
+			check(button.get_global_rect().end.x <= home.get_viewport_rect().size.x,"Hero button fits viewport")
+		check(home.selector.scroll.get_v_scroll_bar().max_value > home.selector.scroll.size.y,"Dossier is scrollable")
+	home.selector.select_hero("kaerun")
 	home._confirm()
 	await process_frame
 	check(home.screen=="intro","Confirm must enter introduction")
-	check(slots.read_slot(1).profile.name=="Test Veyrakian","Name persisted")
+	check(slots.read_slot(1).profile.name=="Kaerun","Name persisted")
 	for i in range(12): home._advance()
 	await process_frame
 	check(home.screen=="ready","Introduction must reach endpoint")
@@ -40,14 +53,30 @@ func run() -> void:
 	home._open_slot(2)
 	await process_frame
 	check(home.screen=="creator","Second slot independent")
-	home.name_input.text = "Second"
+	home.selector.select_hero("ilyra")
 	home._confirm()
 	home._finish_intro()
 	await process_frame
 	check(home.screen=="ready","Skip must reach endpoint")
-	check(slots.read_slot(1).profile.name=="Test Veyrakian","Other slot preserved")
+	check(slots.read_slot(2).profile.hero_id == "ilyra","Selected hero persists independently")
+	check(slots.read_slot(1).profile.name=="Kaerun","Other slot preserved")
 	check(slots.delete_slot(2)==OK,"Delete works")
 	check(slots.read_slot(2).is_empty(),"Deleted slot empty")
+	var legacy = VeyrakProfile.defaults()
+	legacy.name = "Old character"
+	slots.write_slot(3,legacy,{"scene":"res://home.tscn","state":{"phase":"ready"}})
+	home._slots()
+	home._open_slot(3)
+	check(home.screen=="creator","Legacy saves need explicit hero selection")
+	check(slots.read_slot(3).profile.name == "Old character","Browsing must not overwrite old saves")
+	home.selector.select_hero("nyvara")
+	home._confirm()
+	check(home.screen=="ready","Legacy completed intro should stay completed")
+	check(slots.read_slot(3).profile.hero_id == "nyvara","Migration confirmed")
+	check(VeyrakHeroes.derived("kaerun").Health == 280,"Health formula")
+	check(VeyrakHeroes.derived("nyvara")["Critical chance"] == 12,"Critical chance formula")
+	check(VeyrakHeroes.derived("kaerun",2).Health == 295,"Level growth formula")
+	check(VeyrakHeroes.attributes("kaerun",{"Might":2}).Might == 11,"Equipment attribute additions")
 	for i in range(1,4): slots.delete_slot(i)
 	home.queue_free()
 	await process_frame

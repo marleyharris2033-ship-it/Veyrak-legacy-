@@ -21,7 +21,7 @@ const HAIR_COLOURS = ["232632", "dddcd0", "777b81", "965a41", "bfa575", "303d61"
 const EYE_COLOURS = ["f1ce73", "99dbf1", "82d0ac", "c6a3f3", "e59a5e", "d8e4ea"]
 
 static func defaults() -> Dictionary:
-	return {"version": 1, "species": "Veyrakian", "homeworld": "Veyathuun", "name": "", "base": 0, "face": 0, "hair": 1, "hair_colour": 0, "skin": 0, "markings": 1, "eyes": 0, "build": 2, "outfit": 0, "ridges": 1, "accent": 0}
+	return {"version": 1, "species": "Veyrakian", "homeworld": "Veyathuun", "name": "", "base": 0, "face": 0, "hair": 1, "hair_colour": 0, "skin": 0, "markings": 1, "eyes": 0, "build": 2, "outfit": 0, "ridges": 1, "accent": 0, "hero_id": ""}
 
 static func validate(value: Variant) -> Dictionary:
 	var result = defaults()
@@ -29,6 +29,9 @@ static func validate(value: Variant) -> Dictionary:
 		return result
 	if value.get("name") is String:
 		result.name = value.name.strip_edges().left(24)
+	if value.get("hero_id") is String and VeyrakHeroes.index_of(value.hero_id) >= 0:
+		result.hero_id = value.hero_id
+		result.name = VeyrakHeroes.record(value.hero_id).name
 	if value.get("art_revision") == 1:
 		result.art_revision = 1
 	for key in OPTIONS:

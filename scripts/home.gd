@@ -1,6 +1,7 @@
 extends Control
 ## Opening state machine. All screens use logical pixels and native containers.
-const Appearance = preload("res://scripts/appearance.gd")
+const Portrait = preload("res://scripts/hero_portrait.gd")
+const Selector = preload("res://scripts/hero_selector.gd")
 const Ornate = preload("res://scripts/ornate_button.gd")
 const CITY = preload("res://assets/creator/veyathuun-background-v1.png")
 const GOLD = Color("efbb64")
@@ -18,23 +19,16 @@ const NARRATION = [
 "The Veyrakians believe they have reached the summit of power.",
 "They are wrong.",
 "VEYATHUUN\nTHE VEYRAKIAN HOMEWORLD"]
-const LABELS = {"base":"BASE / BODY", "build":"BODY BUILD", "face":"FACE", "hair":"HAIR", "hair_colour":"HAIR COLOUR", "skin":"SKIN TONE", "eyes":"EYES", "ridges":"CRANIAL RIDGES", "markings":"BIOLOGICAL MARKINGS", "outfit":"OUTFIT", "accent":"ARMOUR ACCENT"}
 var screen = "title"
 var page: Control
 var background: TextureRect
 var shade: ColorRect
 var content: VBoxContainer
 var profile: Dictionary
-var preview: Control
-var appearance: Control
-var details: VBoxContainer
-var creator_split: BoxContainer
-var creator_scroll: ScrollContainer
-var name_input: LineEdit
+var selector: Control
 var notice: Label
 var monologue_index = 0
 var transition: Tween
-var selections: Dictionary = {}
 var play_seconds = 0.0
 var auto_save_seconds = 0.0
 
@@ -58,7 +52,9 @@ func _ready() -> void:
 		profile = SaveSlots.current_profile()
 		var phase = SaveSlots.checkpoint.get("state",{}).get("phase","creator")
 		play_seconds = float(SaveSlots.checkpoint.get("state",{}).get("play_seconds",0))
-		if phase == "intro":
+		if profile.hero_id.is_empty():
+			_creator()
+		elif phase == "intro":
 			monologue_index = int(SaveSlots.checkpoint.state.get("intro_index",0))
 			_intro()
 		elif phase == "ready": _endpoint()
@@ -211,6 +207,9 @@ func _open_slot(slot: int) -> void:
 	profile = saved.get("profile",VeyrakProfile.defaults())
 	var state = SaveSlots.checkpoint.get("state",{})
 	play_seconds = float(state.get("play_seconds",0))
+	if profile.hero_id.is_empty():
+		_creator()
+		return
 	match state.get("phase","creator"):
 		"intro":
 			monologue_index = int(state.get("intro_index",0))
@@ -258,131 +257,32 @@ func _settings() -> void:
 
 func _creator() -> void:
 	_clear("creator")
-	selections.clear()
+	shade.color.a = .78
 	var margin = MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	for edge in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+edge,12)
 	page.add_child(margin)
-	creator_split = BoxContainer.new()
-	creator_split.add_theme_constant_override("separation",12)
-	margin.add_child(creator_split)
-	preview = Control.new()
-	preview.size_flags_horizontal = SIZE_EXPAND_FILL
-	preview.size_flags_vertical = SIZE_EXPAND_FILL
-	creator_split.add_child(preview)
-	var scene_art = TextureRect.new()
-	scene_art.texture = CITY
-	scene_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	scene_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	scene_art.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	scene_art.mouse_filter = MOUSE_FILTER_IGNORE
-	preview.add_child(scene_art)
-	appearance = Appearance.new()
-	appearance.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	appearance.profile = profile
-	preview.add_child(appearance)
-	# Reserve real layout space: the view control must never cover the feet.
-	appearance.offset_bottom = -56
-	var zoom = _button(preview,"FACE / FULL VIEW",func():
-		appearance.zoom_face = not appearance.zoom_face
-		appearance.refresh()
-	)
-	zoom.set_anchors_and_offsets_preset(PRESET_BOTTOM_WIDE)
-	zoom.offset_top = -48
-	zoom.offset_bottom = 0
-	zoom.custom_minimum_size.y = 48
-	zoom.add_theme_font_size_override("font_size",14)
-	creator_scroll = ScrollContainer.new()
-	creator_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	creator_scroll.size_flags_horizontal = SIZE_EXPAND_FILL
-	creator_scroll.size_flags_vertical = SIZE_EXPAND_FILL
-	creator_split.add_child(creator_scroll)
-	details = VBoxContainer.new()
-	details.size_flags_horizontal = SIZE_EXPAND_FILL
-	details.add_theme_constant_override("separation",10)
-	creator_scroll.add_child(details)
-	_label(details,"SHAPE YOUR LEGACY",24,GOLD)
-	_label(details,"VEYRAKIAN · VEYATHUUN",14)
-	for key in LABELS:
-		_label(details,LABELS[key],14,GOLD)
-		var row = HBoxContainer.new()
-		details.add_child(row)
-		var prev = _button(row,"‹",func(): _cycle(key,-1))
-		prev.custom_minimum_size.x = 52
-		prev.size_flags_horizontal = SIZE_FILL
-		var selected = _button(row,"",func(): _choices(key))
-		selected.add_theme_font_size_override("font_size",16)
-		selections[key] = selected
-		var next = _button(row,"›",func(): _cycle(key,1))
-		next.custom_minimum_size.x = 52
-		next.size_flags_horizontal = SIZE_FILL
-	_label(details,"YOUR NAME",16,GOLD)
-	name_input = LineEdit.new()
-	name_input.placeholder_text = "Name your Veyrakian"
-	name_input.max_length = 24
-	name_input.custom_minimum_size.y = 56
-	name_input.text = profile.name
-	name_input.text_changed.connect(func(value): profile.name=value)
-	name_input.focus_entered.connect(func(): creator_scroll.ensure_control_visible(name_input))
-	details.add_child(name_input)
-	notice = _label(details,"",15,GOLD)
-	_button(details,"CONFIRM CHARACTER",_confirm,true)
-	_button(details,"BACK TO SAVES",_creator_back)
-	_refresh()
-	_responsive()
+	selector = Selector.new()
+	selector.legacy = not profile.name.is_empty() and profile.hero_id.is_empty()
+	selector.hero_id = profile.hero_id if not profile.hero_id.is_empty() else "kaerun"
+	selector.hero_selected.connect(_select_hero)
+	selector.confirmed.connect(_confirm)
+	selector.back_requested.connect(_creator_back)
+	margin.add_child(selector)
+
+func _select_hero(id: String) -> void:
+	profile.hero_id = id
+	profile.name = VeyrakHeroes.record(id).name
 
 func _responsive() -> void:
-	if screen != "creator" or not is_instance_valid(creator_split): return
-	var s = get_viewport_rect().size
-	var portrait = s.x < 700 and s.y > s.x
-	creator_split.vertical = portrait
-	preview.custom_minimum_size = Vector2(0,clampf(s.y*.40,235,370)) if portrait else Vector2(s.x*.43,0)
-	preview.size_flags_vertical = SIZE_FILL if portrait else SIZE_EXPAND_FILL
-	creator_scroll.custom_minimum_size = Vector2.ZERO
-
-func _refresh() -> void:
-	appearance.set_profile(profile)
-	for key in selections: selections[key].text = VeyrakProfile.OPTIONS[key][profile[key]]
-
-func _cycle(key: String, amount: int) -> void:
-	profile[key] = posmod(profile[key]+amount,VeyrakProfile.OPTIONS[key].size())
-	_refresh()
-
-func _choices(key: String) -> void:
-	var overlay = PanelContainer.new()
-	overlay.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	page.add_child(overlay)
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color("08111f")
-	style.border_color = GOLD
-	style.set_border_width_all(2)
-	style.set_content_margin_all(18)
-	overlay.add_theme_stylebox_override("panel",style)
-	var column = VBoxContainer.new()
-	column.add_theme_constant_override("separation",10)
-	overlay.add_child(column)
-	_label(column,LABELS[key],22,GOLD)
-	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-	var options = VBoxContainer.new()
-	options.size_flags_horizontal = SIZE_EXPAND_FILL
-	scroll.add_child(options)
-	for i in range(VeyrakProfile.OPTIONS[key].size()):
-		_button(options,VeyrakProfile.OPTIONS[key][i],func():
-			profile[key]=i
-			_refresh()
-			overlay.queue_free()
-		,profile[key]==i)
-	_button(column,"BACK",func(): overlay.queue_free())
+	if screen == "creator" and is_instance_valid(selector): selector.layout()
 
 func _creator_back() -> void:
 	var dialog = ConfirmationDialog.new()
-	dialog.title = "Leave character creation?"
+	dialog.title = "Leave hero selection?"
 	dialog.dialog_text = "Your unconfirmed changes will be discarded."
 	dialog.ok_button_text = "LEAVE"
-	dialog.cancel_button_text = "KEEP EDITING"
+	dialog.cancel_button_text = "KEEP CHOOSING"
 	dialog.confirmed.connect(_slots)
 	dialog.canceled.connect(dialog.queue_free)
 	add_child(dialog)
@@ -392,16 +292,16 @@ func _store(phase: String) -> Error:
 	return SaveSlots.save_checkpoint(profile,"res://home.tscn","Veyathuun",{"phase":phase,"intro_index":monologue_index,"play_seconds":int(play_seconds)})
 
 func _confirm() -> void:
-	profile.name = name_input.text.strip_edges()
-	if profile.name.is_empty():
-		notice.text = "Give your Veyrakian a name."
-		name_input.grab_focus()
+	if VeyrakHeroes.index_of(profile.hero_id) < 0: return
+	profile.name = VeyrakHeroes.record(profile.hero_id).name
+	var previous = SaveSlots.checkpoint.get("state",{})
+	var phase = "ready" if previous.get("phase","") == "ready" else "intro"
+	monologue_index = int(previous.get("intro_index",0)) if previous.get("phase","") == "intro" else 0
+	if _store(phase) != OK:
+		selector.status.text = "Could not save. Your selection is still here; please try again."
 		return
-	monologue_index = 0
-	if _store("intro") != OK:
-		notice.text = "Could not save. Your character is still here; please try again."
-		return
-	_intro()
+	if phase == "ready": _endpoint()
+	else: _intro()
 
 func _intro() -> void:
 	_clear("intro")
@@ -452,8 +352,8 @@ func _endpoint() -> void:
 	_clear("ready")
 	_stack()
 	_label(content,"BEGIN YOUR LEGACY",28,GOLD)
-	var portrait = Appearance.new()
-	portrait.profile = profile
+	var portrait = Portrait.new()
+	portrait.hero_id = profile.hero_id
 	portrait.custom_minimum_size.y = 320
 	content.add_child(portrait)
 	_label(content,profile.name,28,GOLD)
