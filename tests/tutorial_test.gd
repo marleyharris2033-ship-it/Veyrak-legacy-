@@ -23,6 +23,9 @@ func run() -> void:
 			await process_frame
 			await process_frame
 			check(game.arena.size.y >= 80,"Arena must fit")
+			check(game.arena.size.y == game.size.y,"World uses full viewport")
+			check(not game.objective.visible and not game.status.visible,"No permanent instruction wall")
+			check(game.hud.map.get_global_rect().end.x <= root.size.x,"Minimap fits viewport")
 			check(game.action_button.get_global_rect().end.y <= root.size.y,"Touch controls must fit")
 			check(game.ability_button.get_global_rect().end.x <= root.size.x,"Ability fits screen")
 		game.actor.motion = Vector2(0,-1)
@@ -30,7 +33,11 @@ func run() -> void:
 		game.actor._update_frame()
 		if id == "kaerun":
 			check(game.actor.sprite.texture == game.actor.KAERUN_ANIMS,"Kaerun uses dedicated animation atlas")
-			check(game.actor.sprite.region_rect.size == Vector2(192,170),"Kaerun animation cell is isolated")
+			check(game.actor.sprite.region_rect.size.y == 187,"Kaerun uses authored pose boundaries")
+			game.actor.play_attack()
+			game.actor.action_clock = .2
+			game.actor._update_frame()
+			check(game.actor.sprite.region_rect.position.y >= 360,"Punch uses actual punch artwork")
 		else:
 			check(int(game.actor.sprite.region_rect.position.y / 256.0) == VeyrakHeroes.index_of(id),"Correct hero sprite row")
 		game.actor.position = Vector2(560,570)
@@ -40,6 +47,8 @@ func run() -> void:
 		check(game.stage == 1,"Interaction requires proximity")
 		game.actor.position = game.instructor.position
 		game.interact()
+		check(game.hud.chat.visible and game.stage == 1,"NPC dialogue waits for player")
+		game.hud.close_chat()
 		check(game.stage == 2,"Instructor begins combat")
 		game.actor.position = Vector2(235,600)
 		game.attack()
@@ -59,6 +68,7 @@ func run() -> void:
 		check(game.equipped and game.stage == 5,"Equipment completes lesson")
 		game.actor.position = game.instructor.position
 		game.interact()
+		game.hud.close_chat()
 		check(game.stage == 6,"Tutorial completion")
 		check(slots.read_slot(1).checkpoint.state.equipped,"Equipment persisted")
 		game.queue_free()

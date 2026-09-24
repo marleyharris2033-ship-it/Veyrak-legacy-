@@ -34,6 +34,7 @@ var turret_time = 0.0
 var turret_tick = 0.0
 var hit_count = 0
 var bearing: Label
+var hud: Control
 
 func _ready() -> void:
 	profile = SaveSlots.current_profile()
@@ -59,32 +60,10 @@ func stats() -> Dictionary:
 	return VeyrakHeroes.derived(profile.hero_id,1,bonuses)
 
 func _build_ui() -> void:
-	theme = Theme.new()
-	theme.default_font = preload("res://assets/fonts/DejaVuSansMono.ttf")
-	theme.default_font_size = 15
-	var bg = ColorRect.new()
-	bg.color = Color("080f1b")
-	bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	add_child(bg)
-	var margin = MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	for edge in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+edge,8)
-	add_child(margin)
-	var stack = VBoxContainer.new()
-	stack.add_theme_constant_override("separation",6)
-	margin.add_child(stack)
-	var bar = HBoxContainer.new()
-	stack.add_child(bar)
-	var title = _label(bar,profile.name.to_upper(),18)
-	title.size_flags_horizontal = SIZE_EXPAND_FILL
-	_button(bar,"SAVE / EXIT",_exit)
-	vitals = _label(stack,"",13)
-	objective = _label(stack,"",16)
 	arena = Control.new()
+	arena.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	arena.clip_contents = true
-	arena.size_flags_vertical = SIZE_EXPAND_FILL
-	arena.custom_minimum_size.y = 80
-	stack.add_child(arena)
+	add_child(arena)
 	world = Node2D.new()
 	arena.add_child(world)
 	var floor_sprite = Sprite2D.new()
@@ -108,21 +87,26 @@ func _build_ui() -> void:
 	world.add_child(actor)
 	effects = Node2D.new()
 	world.add_child(effects)
-	bearing = _label(stack,"",13)
-	status = _label(stack,"",13)
-	var controls = HBoxContainer.new()
-	controls.add_theme_constant_override("separation",8)
-	stack.add_child(controls)
-	stick = Stick.new()
-	controls.add_child(stick)
-	var buttons = VBoxContainer.new()
-	buttons.size_flags_horizontal = SIZE_EXPAND_FILL
-	controls.add_child(buttons)
-	var combat = HBoxContainer.new()
-	buttons.add_child(combat)
-	_button(combat,"ATTACK",attack)
-	ability_button = _button(combat,"ABILITY",ability)
-	action_button = _button(buttons,"ACTION",interact)
+
+	hud = preload("res://scripts/training_hud.gd").new()
+	hud.game = self
+	add_child(hud)
+	stick = hud.stick
+	action_button = hud.action
+	ability_button = hud.skill
+	# Nonvisual state labels retained for compatibility; no instructional text in HUD.
+	status = Label.new()
+	status.hide()
+	add_child(status)
+	objective = Label.new()
+	objective.hide()
+	add_child(objective)
+	vitals = Label.new()
+	vitals.hide()
+	add_child(vitals)
+	bearing = Label.new()
+	bearing.hide()
+	add_child(bearing)
 
 func _label(parent: Node, value: String, font_size: int) -> Label:
 	var label = Label.new()
@@ -151,6 +135,9 @@ func _button(parent: Node, value: String, action: Callable) -> Button:
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor): return
+	if hud.chat.visible:
+		actor.motion = Vector2.ZERO
+		return
 	seconds += delta
 	save_timer += delta
 	cooldown = maxf(0,cooldown-delta)
@@ -183,6 +170,9 @@ func _process(delta: float) -> void:
 	ability_button.text = "ABILITY %ds" % ceili(ability_cooldown) if ability_cooldown > 0 else "ABILITY"
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if hud.chat.visible:
+		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"): hud.close_chat()
+		return
 	if not event is InputEventKey or not event.pressed or event.echo: return
 	match event.physical_keycode:
 		KEY_SPACE: attack()
@@ -210,25 +200,19 @@ func _advance() -> void:
 	if stage == 6: status.text = "Council assessment complete. Training core equipped. Your legacy is saved."
 
 func attack() -> void:
-	if cooldown > 0 or stage not in [2,3]: return
+	if hud.chat.visible or cooldown > 0: return
 	cooldown = .4
-	if profile.hero_id == "kaerun": actor.play_attack()
+	actor.facing = (target.position-actor.position).normalized() if stage in [2,3] else actor.facing
+	actor.play_attack()
 	var reach = 330.0 if profile.hero_id in ["nyvara","dhoran","ilyra"] else 125.0
-	_damage(24*float(stats()["Melee power"]),reach,GOLD)
+	if stage in [2,3]: _damage(24*float(stats()["Melee power"]),reach,GOLD)
+	else: _strike_visual(actor.position+actor.facing*80,false)
 
 func _damage(amount: float, reach: float, colour: Color, signature: bool = false) -> bool:
 	if target.health <= 0 or actor.position.distance_to(target.position) > reach:
 		status.text = "Move closer to the construct. It is east of the projection."
 		return false
-	var line = Line2D.new()
-	line.width = 5
-	line.default_color = colour
-	line.points = PackedVector2Array([actor.position+Vector2(0,-38),target.position+Vector2(0,-40)])
-	effects.add_child(line)
-	var tween = create_tween()
-	tween.tween_property(line,"modulate:a",0.0,.3)
-	tween.tween_callback(line.queue_free)
-	actor.flash = .15
+	_strike_visual(target.position,true)
 	target.health = maxi(1 if stage == 3 and not signature else 0,target.health-int(amount))
 	hit_count += 1
 	status.text = "Construct integrity: %d%%" % target.health
@@ -236,7 +220,14 @@ func _damage(amount: float, reach: float, colour: Color, signature: bool = false
 	return true
 
 func ability() -> void:
-	if stage not in [2,3] or ability_cooldown > 0 or energy < 25: return
+	if stage == 6 and not hud.chat.visible and ability_cooldown <= 0 and energy >= 25:
+		actor.play_signature()
+		_signature_effect(profile.hero_id)
+		_strike_visual(actor.position+actor.facing*90,false)
+		ability_cooldown = 6
+		energy -= 25
+		return
+	if hud.chat.visible or stage not in [2,3] or ability_cooldown > 0 or energy < 25: return
 	if actor.position.distance_to(target.position) > 450:
 		status.text = "Approach the construct before using your ability."
 		return
@@ -259,29 +250,31 @@ func ability() -> void:
 	if was_ability_lesson: _advance()
 
 func interact() -> void:
+	if hud.chat.visible: return
 	if stage in [1,5]:
 		if actor.position.distance_to(instructor.position) > 100:
 			status.text = "Approach the blue Council projection to the north."
 			return
-		status.text = "Council: Demonstrate control. The training construct is to the east."
-		_advance()
+		hud.say("Demonstrate control. Strike the eastern construct, then use your core ability. Follow the gold mark on your map." if stage == 1 else "Assessment complete. Your training core is equipped. Veyathuun expects great things of you.",true)
 	elif stage == 4:
 		if actor.position.distance_to(Vector2(1120,600)) > 100:
 			status.text = "The gold reward beacon is southeast of the construct."
 			return
 		if not claimed:
 			claimed = true
-			status.text = "Training core recovered. +2 to your hero’s signature attribute. Tap EQUIP CORE."
+			hud.notify("Training core +2 · tap EQUIP")
 			action_button.text = "EQUIP CORE"
 			_save()
 		else:
 			equipped = true
+			hud.notify("Training core equipped")
 			_advance()
-	else: status.text = LESSONS[stage]
+	elif stage == 6 and actor.position.distance_to(instructor.position) < 100:
+		hud.say("Your assessment is complete. You may practise your strikes here, or return to title.",false)
 
 func _save() -> Error:
 	var error = SaveSlots.save_checkpoint(profile,"res://tutorial.tscn","Council Training Terrace",{"phase":"tutorial","lesson":stage,"claimed":claimed,"equipped":equipped,"x":actor.position.x,"y":actor.position.y,"play_seconds":int(seconds)})
-	if error != OK: status.text = "Save failed. Keep this session open and try SAVE / EXIT again."
+	if error != OK: hud.notify("Save failed. Please retry.",true)
 	return error
 
 func _exit() -> void:
@@ -302,3 +295,48 @@ func _signature_effect(id: String) -> void:
 	var tween = create_tween()
 	tween.tween_property(ring,"modulate:a",0.0,.8)
 	tween.tween_callback(ring.queue_free)
+
+func _strike_visual(destination: Vector2, hit: bool) -> void:
+	var origin: Vector2 = actor.position+Vector2(0,-38)
+	var end = destination+Vector2(0,-38)
+	var ranged = profile.hero_id in ["dhoran","nyvara","ilyra"]
+	var colour = Color("bd91ff") if profile.hero_id in ["vaelis","ilyra"] else GOLD
+	if ranged:
+		var bolt = Polygon2D.new()
+		bolt.polygon = PackedVector2Array([Vector2(-10,-2),Vector2(8,-3),Vector2(13,0),Vector2(8,3),Vector2(-10,2)])
+		bolt.color = colour
+		bolt.position = origin
+		bolt.rotation = (end-origin).angle()
+		effects.add_child(bolt)
+		var flight = create_tween()
+		flight.tween_property(bolt,"position",end,.16)
+		flight.tween_callback(bolt.queue_free)
+		if hit: flight.tween_callback(func(): _impact(end,colour))
+	else:
+		var arc = Line2D.new()
+		arc.width = 4
+		arc.default_color = colour
+		arc.position = origin
+		arc.rotation = (end-origin).angle()
+		for i in range(13):
+			var angle = -.8+1.6*i/12
+			arc.add_point(Vector2(cos(angle)*48,sin(angle)*34))
+		effects.add_child(arc)
+		arc.scale = Vector2(.3,.3)
+		var swing = create_tween()
+		swing.tween_property(arc,"scale",Vector2(1.3,1.3),.12)
+		if hit: swing.tween_callback(func(): _impact(end,colour))
+		swing.tween_property(arc,"modulate:a",0.0,.12)
+		swing.tween_callback(arc.queue_free)
+
+func _impact(at: Vector2, colour: Color) -> void:
+	for i in range(8):
+		var spark = Polygon2D.new()
+		spark.polygon = PackedVector2Array([Vector2(-2,-2),Vector2(2,-2),Vector2(2,2),Vector2(-2,2)])
+		spark.position = at
+		spark.color = colour
+		effects.add_child(spark)
+		var burst = create_tween().set_parallel(true)
+		burst.tween_property(spark,"position",at+Vector2.from_angle(TAU*i/8)*26,.18)
+		burst.tween_property(spark,"modulate:a",0.0,.2)
+		burst.chain().tween_callback(spark.queue_free)
