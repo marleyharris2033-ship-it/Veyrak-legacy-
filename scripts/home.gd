@@ -281,6 +281,8 @@ func _creator() -> void:
 	appearance.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	appearance.profile = profile
 	preview.add_child(appearance)
+	# Reserve real layout space: the view control must never cover the feet.
+	appearance.offset_bottom = -56
 	var zoom = _button(preview,"FACE / FULL VIEW",func():
 		appearance.zoom_face = not appearance.zoom_face
 		appearance.refresh()

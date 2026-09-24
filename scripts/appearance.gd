@@ -5,6 +5,16 @@ const BODY = preload("res://assets/creator/modular/bodies.png")
 const FACE = preload("res://assets/creator/modular/faces.png")
 const HAIR = preload("res://assets/creator/modular/hair.png")
 const PALETTE = preload("res://assets/creator/modular/palette.gdshader")
+# Per-style cap registration (width relative to face, x/y offsets).
+# Long tails must not determine the size or position of the skull cap.
+const HAIR_FIT = [
+	Vector3(1.12, -.06, -.04), Vector3(1.20, -.12, -.15),
+	Vector3(1.18, -.10, -.22), Vector3(1.20, -.12, -.16),
+	Vector3(1.30, -.20, -.10), Vector3(1.22, -.14, -.10),
+	Vector3(1.40, -.30, -.12), Vector3(1.26, -.18, -.25),
+	Vector3(1.16, -.08, -.10), Vector3(1.42, -.32, -.20),
+	Vector3(1.24, -.15, -.12)
+]
 var profile: Dictionary = VeyrakProfile.defaults()
 var zoom_face = false
 var layers: Array[TextureRect] = []
@@ -29,6 +39,8 @@ func _ready() -> void:
 	detail.mouse_filter = MOUSE_FILTER_IGNORE
 	detail.draw.connect(_draw_details)
 	add_child(detail)
+	# Biological details belong on skin, beneath the hair, not on its surface.
+	move_child(detail, layers[2].get_index())
 	resized.connect(refresh)
 	refresh()
 
@@ -68,7 +80,8 @@ func refresh() -> void:
 	var head_w = head_h * layers[1].texture.get_width() / layers[1].texture.get_height()
 	head_rect = Rect2(Vector2(size.x*0.5-head_w*0.30, size.y*0.17-head_h*0.83),Vector2(head_w,head_h))
 	if zoom_face:
-		head_rect.size *= 3.8
+		var zoom_scale = minf(3.8, minf(size.x * .55 / head_rect.size.x, size.y * .48 / head_rect.size.y))
+		head_rect.size *= zoom_scale
 		head_rect.position = Vector2((size.x-head_rect.size.x)*0.5, size.y*0.22)
 	layers[0].visible = not zoom_face
 	layers[1].position = head_rect.position
@@ -77,17 +90,18 @@ func refresh() -> void:
 	if profile.hair != 0:
 		var idx = profile.hair - 1
 		layers[2].texture = region(HAIR, Rect2i(int(round((idx % 4)*313.5)), int(round(int(idx/4)*418.0)),313,418))
-		var long_style = profile.hair in [5,6,7,10,11]
-		var hw = head_rect.size.x * (1.46 if long_style else 1.24)
+		var fit = HAIR_FIT[idx]
+		var hw = head_rect.size.x * fit.x
 		var hh = hw * layers[2].texture.get_height()/layers[2].texture.get_width()
 		layers[2].size = Vector2(hw,hh)
-		layers[2].position = head_rect.position + Vector2(-head_rect.size.x*(0.30 if long_style else 0.12), -head_rect.size.y*0.16)
+		layers[2].position = head_rect.position + Vector2(head_rect.size.x * fit.y, head_rect.size.y * fit.z)
 	for i in range(3):
 		var mat = layers[i].material as ShaderMaterial
 		mat.set_shader_parameter("mode", i)
 		mat.set_shader_parameter("skin", Color(VeyrakProfile.SKIN_COLOURS[profile.skin]))
 		mat.set_shader_parameter("accent", Color(VeyrakProfile.ACCENT_COLOURS[profile.accent]))
 		mat.set_shader_parameter("hair", Color(VeyrakProfile.HAIR_COLOURS[profile.hair_colour]))
+		mat.set_shader_parameter("eyes", Color(VeyrakProfile.EYE_COLOURS[profile.eyes]))
 	detail.queue_redraw()
 
 func _stroke(points: Array, colour: Color, width: float) -> void:
@@ -97,8 +111,8 @@ func _stroke(points: Array, colour: Color, width: float) -> void:
 
 func _draw_details() -> void:
 	var unit = head_rect.size.x / 80.0
-	var eyes = Color(VeyrakProfile.EYE_COLOURS[profile.eyes])
-	_stroke([Vector2(.62,.425),Vector2(.73,.44)], eyes, maxf(1.4,unit*2.4))
+	# Eye colour is applied to the artwork's eye pixels by the palette shader.
+	# A fixed line here would float over differently shaped faces.
 	var mark = Color(VeyrakProfile.SKIN_COLOURS[profile.skin]).darkened(.43)
 	var patterns = [[],[Vector2(.40,.40),Vector2(.45,.55),Vector2(.40,.63)],[Vector2(.56,.27),Vector2(.62,.21),Vector2(.68,.30)], [Vector2(.54,.54),Vector2(.62,.65),Vector2(.55,.67),Vector2(.65,.76)], [Vector2(.43,.57),Vector2(.55,.63),Vector2(.62,.56)], [Vector2(.45,.28),Vector2(.52,.38),Vector2(.40,.35),Vector2(.52,.31)], [Vector2(.40,.50),Vector2(.63,.55),Vector2(.71,.52)], [Vector2(.43,.44),Vector2(.40,.61),Vector2(.52,.76)], [Vector2(.50,.80),Vector2(.52,.65),Vector2(.43,.56),Vector2(.46,.43)], [Vector2(.38,.30),Vector2(.44,.18),Vector2(.55,.27),Vector2(.63,.16)]]
 	if profile.markings > 0: _stroke(patterns[profile.markings],mark,maxf(1.5,unit*2.3))
