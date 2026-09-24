@@ -1,7 +1,9 @@
 extends SceneTree
 var failed = false
 func check(ok: bool, message: String) -> void:
-	if not ok: failed = true; push_error(message)
+	if not ok:
+		failed = true
+		push_error(message)
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
@@ -15,6 +17,10 @@ func run() -> void:
 	var game = load("res://tutorial.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
+	check(game.kit.hotbar.size() == 8,"Eight-slot mixed hotbar")
+	check(game.kit.kind(game.kit.hotbar[0]) == "weapon","Weapon lives on hotbar")
+	check(game.kit.kind(game.kit.hotbar[2]) == "utility","Utility lives on hotbar")
+	check(game.kit.kind(game.kit.hotbar[4]) == "food","Food lives on hotbar")
 	check(game.kit.points == 3,"Completed legacy save earns points")
 	game.kit.reward()
 	check(game.kit.points == 3,"Reward cannot be repeated")
@@ -22,11 +28,13 @@ func run() -> void:
 	check(game.kit.spend("Endurance"),"Spend point")
 	check(game.stats().Health == before+20,"Upgrade affects actual stats")
 	game.health = 30
-	game.use_food(0)
+	game.use_hotbar(4)
 	check(game.health == 90 and game.kit.inventory.ration == 2,"Food consumed and heals")
 	game.health = game.stats().Health
-	game.use_food(0)
+	game.use_hotbar(4)
 	check(game.kit.inventory.ration == 2,"Full health does not waste food")
+	game.use_hotbar(1)
+	check(game.kit.active_slot == 1 and game.kit.selected_id() == "sidearm","Weapon can be readied from hotbar")
 	game.hud.toggle_menu()
 	for dimensions in [Vector2i(390,844),Vector2i(844,390)]:
 		root.size = dimensions
@@ -52,6 +60,7 @@ func run() -> void:
 	game.hud.strike_button._input(strike_touch)
 	check(game.cooldown > 0 and game.stick.direction.x > 0,"Second finger attacks without releasing movement")
 	game.stick.reset()
+	game.kit.active_slot = 0
 	for direction in [Vector2.UP,Vector2.DOWN,Vector2.LEFT,Vector2.RIGHT]:
 		game.actor.position = Vector2(750,490)
 		game.actor.motion = direction
@@ -81,8 +90,13 @@ func run() -> void:
 	var save = slots.read_slot(1).checkpoint.state
 	var restored = load("res://scripts/field_kit.gd").new()
 	restored.restore(save,true,true)
+	check(restored.hotbar.size() == 8,"Mixed hotbar persists")
+	check(restored.active_slot == game.kit.active_slot,"Selected hotbar slot persists")
 	check(restored.points == 2 and restored.upgrades.Endurance == 1,"Upgrade and points persist")
 	check(restored.inventory.ration == 2,"Food count persists")
+	var legacy = load("res://scripts/field_kit.gd").new()
+	legacy.restore({"kit":{"hotbar":["ration","nectar",""],"inventory":{"ration":1,"nectar":1}}},false,false)
+	check(legacy.hotbar.size() == 8 and legacy.hotbar[4] == "ration","Old three-slot saves migrate")
 	game.queue_free()
 	await process_frame
 	slots.delete_slot(1)

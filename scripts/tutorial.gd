@@ -199,9 +199,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ESCAPE: hud.toggle_menu()
 		KEY_I: hud.toggle_menu()
 		KEY_SHIFT: dodge()
-		KEY_1: use_food(0)
-		KEY_2: use_food(1)
-		KEY_3: use_food(2)
+		KEY_1: use_hotbar(0)
+		KEY_2: use_hotbar(1)
+		KEY_3: use_hotbar(2)
+		KEY_4: use_hotbar(3)
+		KEY_5: use_hotbar(4)
+		KEY_6: use_hotbar(5)
+		KEY_7: use_hotbar(6)
+		KEY_8: use_hotbar(7)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and is_instance_valid(stick):
@@ -228,7 +233,7 @@ func attack() -> void:
 	cooldown = .4
 	if actor.motion.length_squared() > .01: actor.facing = actor.motion.normalized()
 	actor.play_attack()
-	var reach = 330.0 if profile.hero_id in ["nyvara","dhoran","ilyra"] else 125.0
+	var reach = 360.0 if kit.selected_id() == "sidearm" or profile.hero_id in ["nyvara","dhoran","ilyra"] else 125.0
 	var toward: Vector2 = target.position-actor.position
 	if stage in [2,3] and toward.normalized().dot(actor.facing.normalized()) > .45 and toward.length() <= reach:
 		_damage(24*float(stats()["Melee power"]),reach,GOLD)
@@ -320,10 +325,34 @@ func dodge() -> void:
 func can_receive_damage() -> bool:
 	return dodge_time <= 0
 
+func use_hotbar(slot: int) -> void:
+	if hud.blocked() or slot < 0 or slot >= kit.hotbar.size():
+		return
+	var id = str(kit.hotbar[slot])
+	if id == "" or kit.inventory.get(id,0) <= 0:
+		return
+	kit.active_slot = slot
+	var item = kit.ITEMS.get(id,{})
+	match item.get("kind",""):
+		"food":
+			_consume_food(id)
+		"weapon":
+			hud.notify(str(item.get("name","Weapon"))+" readied")
+		"utility":
+			var messages = {
+				"scanner":"No unidentified signals in the training terrace.",
+				"repair":"No damaged equipment requires repair.",
+				"harvest":"No harvestable resource nearby."
+			}
+			hud.notify(messages.get(id,str(item.get("name","Utility"))+" ready"))
+	_save()
+
 func use_food(slot: int) -> void:
-	if hud.blocked() or slot < 0 or slot >= 3: return
-	var id = kit.hotbar[slot]
-	if not kit.FOOD.has(id) or kit.inventory.get(id,0) <= 0: return
+	use_hotbar(slot)
+
+func _consume_food(id: String) -> void:
+	if not kit.FOOD.has(id) or kit.inventory.get(id,0) <= 0:
+		return
 	var food = kit.FOOD[id]
 	if (food.health > 0 and health >= stats().Health) or (food.energy > 0 and energy >= stats().Energy):
 		hud.notify("Already full")
@@ -332,8 +361,6 @@ func use_food(slot: int) -> void:
 	health = minf(stats().Health,health+food.health)
 	energy = minf(stats().Energy,energy+food.energy)
 	hud.notify(food.name+" used")
-	_save()
-
 func _signature_effect(id: String) -> void:
 	var ring = Line2D.new()
 	ring.width = 4
@@ -351,7 +378,7 @@ func _signature_effect(id: String) -> void:
 func _strike_visual(destination: Vector2, hit: bool) -> void:
 	var origin: Vector2 = actor.position+Vector2(0,-38)
 	var end = destination+Vector2(0,-38)
-	var ranged = profile.hero_id in ["dhoran","nyvara","ilyra"]
+	var ranged = kit.selected_id() == "sidearm" or profile.hero_id in ["dhoran","nyvara","ilyra"]
 	var colour = Color("bd91ff") if profile.hero_id in ["vaelis","ilyra"] else GOLD
 	if ranged:
 		var bolt = Polygon2D.new()
