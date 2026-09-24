@@ -28,7 +28,11 @@ func run() -> void:
 		game.actor.motion = Vector2(0,-1)
 		game.actor.facing = Vector2(0,-1)
 		game.actor._update_frame()
-		check(game.actor.sprite.frame / 4 == VeyrakHeroes.index_of(id),"Correct hero sprite row")
+		if id == "kaerun":
+			check(game.actor.sprite.texture == game.actor.KAERUN_ANIMS,"Kaerun uses dedicated animation atlas")
+			check(game.actor.sprite.region_rect.size == Vector2(192,170),"Kaerun animation cell is isolated")
+		else:
+			check(int(game.actor.sprite.region_rect.position.y / 256.0) == VeyrakHeroes.index_of(id),"Correct hero sprite row")
 		game.actor.position = Vector2(560,570)
 		game._process(.01)
 		check(game.stage == 1,"Movement completes lesson")
