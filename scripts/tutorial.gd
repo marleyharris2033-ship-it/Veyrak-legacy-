@@ -319,6 +319,7 @@ func dodge() -> void:
 	if hud.blocked() or dodge_cooldown > 0 or energy < 15: return
 	dodge_direction = actor.motion.normalized() if actor.motion.length_squared() > .01 else actor.facing.normalized()
 	dodge_time = .22
+	actor.play_dodge(dodge_direction)
 	dodge_cooldown = 1.2
 	energy -= 15
 
