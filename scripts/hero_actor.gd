@@ -12,6 +12,8 @@ var flash = 0.0
 var sprite: Sprite2D
 var action_anim := ""
 var action_clock := 0.0
+var action_direction := Vector2.DOWN
+var dodging := false
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite = Sprite2D.new()
@@ -32,11 +34,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	action_clock += delta
-	if action_anim != "" and action_clock > (0.75 if action_anim == "slam" else 0.55):
+	if action_anim != "" and action_clock > (0.75 if action_anim == "slam" else 0.30 if action_anim == "dodge" else 0.55):
 		action_anim = ""
 		action_clock = 0.0
 	flash = maxf(0,flash-delta)
-	if motion.length_squared() > .01: facing = motion
+	if motion.length_squared() > .01 and action_anim == "": facing = motion.normalized()
 	_update_frame()
 func _update_frame() -> void:
 	if hero_id == "kaerun":
@@ -66,7 +68,13 @@ func _draw() -> void:
 
 
 func play_attack() -> void:
+	action_direction = facing.normalized() if facing.length_squared() > .01 else Vector2.DOWN
 	action_anim = "punch"
+	action_clock = 0.0
+
+func play_dodge(direction: Vector2) -> void:
+	action_direction = direction.normalized() if direction.length_squared() > .01 else facing.normalized()
+	action_anim = "dodge"
 	action_clock = 0.0
 
 func play_signature() -> void:
@@ -86,6 +94,8 @@ func _update_kaerun_frame() -> void:
 	var frames = [[20,0,180,187,100,181]]
 	if action_anim == "punch":
 		frames = [[15,364,192,176,109,171],[214,364,198,177,102,171],[416,361,222,180,108,174],[640,364,214,177,102,171],[214,364,198,177,102,171],[15,364,192,176,109,171]]
+	elif action_anim == "dodge":
+		frames = [[432,0,168,187,85,181],[627,0,145,187,74,181],[831,0,145,187,74,181],[627,0,145,187,74,181]]
 	elif action_anim == "slam":
 		frames = [[0,548,230,186,122,180],[237,548,377,186,177,180],[617,548,311,186,158,180],[930,548,301,187,144,181],[1236,548,221,186,104,180]]
 	elif action_anim == "hit":
@@ -101,7 +111,8 @@ func _update_kaerun_frame() -> void:
 	sprite.region_filter_clip_enabled = true
 	sprite.centered = false
 	sprite.offset = Vector2(-f[4],-f[5])
-	sprite.flip_h = facing.x < 0
+	var render_facing = action_direction if action_anim in ["punch","dodge"] else facing
+	sprite.flip_h = render_facing.x < 0
 	if sprite.flip_h: sprite.offset.x = f[4]-f[2]
 	sprite.position = Vector2.ZERO
 	sprite.scale = Vector2(.43,.43)
