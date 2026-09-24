@@ -15,8 +15,12 @@ func _ready() -> void:
 	sprite.texture = SHEET
 	sprite.hframes = 4
 	sprite.vframes = 6
+	# The generated atlas cells include artwork close to their source-cell edges.
+	# Give the gameplay render a small safe inset instead of enlarging/re-cropping
+	# individual heroes; this keeps all six on one consistent feet anchor and
+	# prevents weapons/hair from appearing clipped at frame boundaries.
 	sprite.position = Vector2(0,-42)
-	sprite.scale = Vector2(.34,.34)
+	sprite.scale = Vector2(.305,.305)
 	add_child(sprite)
 	_update_frame()
 func _process(delta: float) -> void:
@@ -29,7 +33,8 @@ func _update_frame() -> void:
 	if motion.length_squared() > .01: col += int(clock*7.0)%2
 	sprite.frame = maxi(0,VeyrakHeroes.index_of(hero_id))*4+col
 	sprite.flip_h = facing.x < 0
-	sprite.position.y = -42 - (1 if motion.length_squared()>.01 and int(clock*7.0)%2 else 0)
+	# Keep the feet anchor stable across front/rear and walk frames.
+	sprite.position = Vector2(0,-42 - (1 if motion.length_squared()>.01 and int(clock*7.0)%2 else 0))
 	sprite.modulate = Color(1.6,1.4,1.1) if flash>0 else Color.WHITE
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0,Vector2(1,.36))
