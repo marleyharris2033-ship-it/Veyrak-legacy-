@@ -193,7 +193,7 @@ func layout() -> void:
 		return
 	var portrait_mode = size.y > size.x*1.12
 	var margin = 8.0
-	var map_side = 84.0 if portrait_mode else 108.0
+	var map_side = 96.0 if portrait_mode else 108.0
 	var top_h = 68.0 if portrait_mode else 74.0
 	var frame_w = clampf(size.x-map_side-24.0,190.0,310.0)
 	top_frame.position = Vector2(margin,margin)
