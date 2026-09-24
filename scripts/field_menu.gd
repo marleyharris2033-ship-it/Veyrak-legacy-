@@ -84,6 +84,8 @@ func rebuild() -> void:
 			text("Active field slot: %d · %s" % [kit.active_slot+1,kit.ITEMS.get(kit.selected_id(),{}).get("name","Empty")])
 			text("STANDARD ISSUE · "+VeyrakHeroes.record(game.profile.hero_id).weapon)
 			for id in ["primary","sidearm"]:
+				if kit.inventory.get(id,0) <= 0:
+					continue
 				game.hud.button(body,"READY "+kit.ITEMS[id].name.to_upper(),func(item_id=id):
 					var slot = kit.hotbar.find(item_id)
 					if slot >= 0:
