@@ -54,6 +54,8 @@ func run() -> void:
 		game.attack()
 		check(game.target.health == 100,"Attack requires range")
 		game.actor.position = game.target.position+Vector2(-50,0)
+		game.actor.motion = Vector2.ZERO
+		game.actor.facing = Vector2.RIGHT
 		for i in range(10):
 			game.cooldown = 0
 			game.attack()

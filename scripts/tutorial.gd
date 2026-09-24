@@ -35,6 +35,10 @@ var turret_tick = 0.0
 var hit_count = 0
 var bearing: Label
 var hud: Control
+var kit = preload("res://scripts/field_kit.gd").new()
+var dodge_time = 0.0
+var dodge_cooldown = 0.0
+var dodge_direction = Vector2.ZERO
 
 func _ready() -> void:
 	profile = SaveSlots.current_profile()
@@ -46,6 +50,8 @@ func _ready() -> void:
 	claimed = bool(state.get("claimed",false))
 	equipped = claimed and bool(state.get("equipped",false))
 	seconds = float(state.get("play_seconds",0))
+	kit.restore(state,stage == 6,equipped)
+	equipped = claimed and kit.core_worn
 	_build_ui()
 	actor.position = Vector2(clampf(float(state.get("x",440)),235,1295),clampf(float(state.get("y",600)),320,660))
 	health = float(stats().Health)
@@ -54,10 +60,15 @@ func _ready() -> void:
 	status.text = "Move: stick / WASD · Attack: Space · Ability: Q · Action: E"
 
 func stats() -> Dictionary:
-	var bonuses = {}
-	if equipped:
-		bonuses[["Might","Agility","Core","Core","Precision","Resonance"][VeyrakHeroes.index_of(profile.hero_id)]] = 2
-	return VeyrakHeroes.derived(profile.hero_id,1,bonuses)
+	return VeyrakHeroes.derived(profile.hero_id,1,bonuses())
+
+func signature_attribute() -> String:
+	return ["Might","Agility","Core","Core","Precision","Resonance"][VeyrakHeroes.index_of(profile.hero_id)]
+
+func bonuses() -> Dictionary:
+	var result = kit.upgrades.duplicate()
+	if equipped: result[signature_attribute()] = result.get(signature_attribute(),0)+2
+	return result
 
 func _build_ui() -> void:
 	arena = Control.new()
@@ -135,13 +146,15 @@ func _button(parent: Node, value: String, action: Callable) -> Button:
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor): return
-	if hud.chat.visible:
+	if hud.blocked():
 		actor.motion = Vector2.ZERO
 		return
 	seconds += delta
 	save_timer += delta
 	cooldown = maxf(0,cooldown-delta)
 	ability_cooldown = maxf(0,ability_cooldown-delta)
+	dodge_cooldown = maxf(0,dodge_cooldown-delta)
+	dodge_time = maxf(0,dodge_time-delta)
 	energy = minf(float(stats().Energy),energy+delta*10)
 	var direction: Vector2 = stick.direction
 	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP): direction.y -= 1
@@ -149,7 +162,9 @@ func _process(delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
 	actor.motion = direction.limit_length()
-	actor.position += actor.motion*170*delta
+	if actor.motion.length_squared() > .01: actor.facing = actor.motion
+	actor.position += (dodge_direction*530 if dodge_time > 0 else actor.motion*170)*delta
+	actor.modulate.a = .55 if dodge_time > 0 else 1.0
 	actor.position = actor.position.clamp(BOUNDS.position,BOUNDS.end)
 	world.position = arena.size*.5-actor.position
 	var goal: Vector2 = target.position if stage in [2,3] else marker.position
@@ -170,6 +185,9 @@ func _process(delta: float) -> void:
 	ability_button.text = "ABILITY %ds" % ceili(ability_cooldown) if ability_cooldown > 0 else "ABILITY"
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if hud.field_menu.visible:
+		if event.is_action_pressed("ui_cancel"): hud.toggle_menu()
+		return
 	if hud.chat.visible:
 		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"): hud.close_chat()
 		return
@@ -178,7 +196,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_SPACE: attack()
 		KEY_Q: ability()
 		KEY_E: interact()
-		KEY_ESCAPE: _exit()
+		KEY_ESCAPE: hud.toggle_menu()
+		KEY_I: hud.toggle_menu()
+		KEY_SHIFT: dodge()
+		KEY_1: use_food(0)
+		KEY_2: use_food(1)
+		KEY_3: use_food(2)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and is_instance_valid(stick):
@@ -195,17 +218,20 @@ func _refresh_stage() -> void:
 
 func _advance() -> void:
 	stage = mini(stage+1,6)
+	if stage == 6: kit.reward()
 	_refresh_stage()
 	_save()
 	if stage == 6: status.text = "Council assessment complete. Training core equipped. Your legacy is saved."
 
 func attack() -> void:
-	if hud.chat.visible or cooldown > 0: return
+	if hud.blocked() or cooldown > 0 or dodge_time > 0: return
 	cooldown = .4
-	actor.facing = (target.position-actor.position).normalized() if stage in [2,3] else actor.facing
+	if actor.motion.length_squared() > .01: actor.facing = actor.motion.normalized()
 	actor.play_attack()
 	var reach = 330.0 if profile.hero_id in ["nyvara","dhoran","ilyra"] else 125.0
-	if stage in [2,3]: _damage(24*float(stats()["Melee power"]),reach,GOLD)
+	var toward: Vector2 = target.position-actor.position
+	if stage in [2,3] and toward.normalized().dot(actor.facing.normalized()) > .45 and toward.length() <= reach:
+		_damage(24*float(stats()["Melee power"]),reach,GOLD)
 	else: _strike_visual(actor.position+actor.facing*80,false)
 
 func _damage(amount: float, reach: float, colour: Color, signature: bool = false) -> bool:
@@ -220,6 +246,7 @@ func _damage(amount: float, reach: float, colour: Color, signature: bool = false
 	return true
 
 func ability() -> void:
+	if hud.blocked() or dodge_time > 0: return
 	if stage == 6 and not hud.chat.visible and ability_cooldown <= 0 and energy >= 25:
 		actor.play_signature()
 		_signature_effect(profile.hero_id)
@@ -250,7 +277,7 @@ func ability() -> void:
 	if was_ability_lesson: _advance()
 
 func interact() -> void:
-	if hud.chat.visible: return
+	if hud.blocked(): return
 	if stage in [1,5]:
 		if actor.position.distance_to(instructor.position) > 100:
 			status.text = "Approach the blue Council projection to the north."
@@ -267,13 +294,14 @@ func interact() -> void:
 			_save()
 		else:
 			equipped = true
+			kit.core_worn = true
 			hud.notify("Training core equipped")
 			_advance()
 	elif stage == 6 and actor.position.distance_to(instructor.position) < 100:
 		hud.say("Your assessment is complete. You may practise your strikes here, or return to title.",false)
 
 func _save() -> Error:
-	var error = SaveSlots.save_checkpoint(profile,"res://tutorial.tscn","Council Training Terrace",{"phase":"tutorial","lesson":stage,"claimed":claimed,"equipped":equipped,"x":actor.position.x,"y":actor.position.y,"play_seconds":int(seconds)})
+	var error = SaveSlots.save_checkpoint(profile,"res://tutorial.tscn","Council Training Terrace",{"phase":"tutorial","lesson":stage,"claimed":claimed,"equipped":equipped,"x":actor.position.x,"y":actor.position.y,"play_seconds":int(seconds),"kit":kit.serialise()})
 	if error != OK: hud.notify("Save failed. Please retry.",true)
 	return error
 
@@ -281,6 +309,30 @@ func _exit() -> void:
 	if _save() != OK: return
 	SaveSlots.active_slot = 0
 	get_tree().change_scene_to_file("res://home.tscn")
+
+func dodge() -> void:
+	if hud.blocked() or dodge_cooldown > 0 or energy < 15: return
+	dodge_direction = actor.motion.normalized() if actor.motion.length_squared() > .01 else actor.facing.normalized()
+	dodge_time = .22
+	dodge_cooldown = 1.2
+	energy -= 15
+
+func can_receive_damage() -> bool:
+	return dodge_time <= 0
+
+func use_food(slot: int) -> void:
+	if hud.blocked() or slot < 0 or slot >= 3: return
+	var id = kit.hotbar[slot]
+	if not kit.FOOD.has(id) or kit.inventory.get(id,0) <= 0: return
+	var food = kit.FOOD[id]
+	if (food.health > 0 and health >= stats().Health) or (food.energy > 0 and energy >= stats().Energy):
+		hud.notify("Already full")
+		return
+	kit.inventory[id] -= 1
+	health = minf(stats().Health,health+food.health)
+	energy = minf(stats().Energy,energy+food.energy)
+	hud.notify(food.name+" used")
+	_save()
 
 func _signature_effect(id: String) -> void:
 	var ring = Line2D.new()

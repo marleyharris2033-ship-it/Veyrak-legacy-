@@ -15,6 +15,12 @@ var toast_time = 0.0
 var top: HBoxContainer
 var bottom: HBoxContainer
 var pending = false
+var field_menu: Control
+var hotbar: HBoxContainer
+var quick_slots: Array[Button] = []
+var dodge_button: Button
+var menu_button: Button
+var strike_button: Button
 func _ready() -> void:
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_IGNORE
@@ -53,13 +59,23 @@ func _ready() -> void:
 	bottom.add_child(buttons)
 	var combat = HBoxContainer.new()
 	buttons.add_child(combat)
-	button(combat,"STRIKE",game.attack)
+	strike_button = button(combat,"STRIKE",game.attack)
 	skill = button(combat,"CORE",game.ability)
+	dodge_button = button(buttons,"DODGE",game.dodge)
 	action = button(buttons,"TALK",game.interact)
-	var menu = button(self,"☰",game._exit)
-	menu.position = Vector2(10,96)
+	var menu = button(self,"☰",toggle_menu)
+	menu_button = menu
+	menu.position = Vector2(10,126)
 	menu.size = Vector2(48,48)
-	menu.tooltip_text = "Save and return to title"
+	menu.tooltip_text = "Inventory, equipment and attributes"
+	hotbar = HBoxContainer.new()
+	hotbar.add_theme_constant_override("separation",4)
+	add_child(hotbar)
+	for i in range(3):
+		var slot = button(hotbar,"",func(): game.use_food(i))
+		slot.add_theme_constant_override("icon_max_width",24)
+		slot.custom_minimum_size = Vector2(72,48)
+		quick_slots.append(slot)
 	toast = label(self,"")
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.hide()
@@ -72,6 +88,10 @@ func _ready() -> void:
 	speech.add_theme_color_override("font_color",Color("eee8d8"))
 	next = button(box,"CONTINUE",close_chat)
 	chat.hide()
+	field_menu = preload("res://scripts/field_menu.gd").new()
+	field_menu.game = game
+	add_child(field_menu)
+	field_menu.hide()
 	resized.connect(layout)
 	layout()
 func panel(parent: Node) -> PanelContainer:
@@ -105,21 +125,25 @@ func meter(parent: Node, colour: Color) -> ProgressBar:
 	parent.add_child(p)
 	return p
 func button(parent: Node, text: String, callback: Callable) -> Button:
-	var b = preload("res://scripts/ornate_button.gd").new()
+	var b = preload("res://scripts/touch_action.gd").new()
 	b.text = text
 	b.custom_minimum_size = Vector2(76,48)
 	b.size_flags_horizontal = SIZE_EXPAND_FILL
-	b.pressed.connect(callback)
+	b.activated.connect(callback)
 	parent.add_child(b)
 	return b
 func layout() -> void:
 	top.position = Vector2(10,10)
 	top.size = Vector2(minf(size.x-20,440),76)
-	bottom.position = Vector2(10,size.y-126)
-	bottom.size = Vector2(size.x-20,116)
+	bottom.position = Vector2(10,size.y-166)
+	bottom.size = Vector2(size.x-20,156)
+	hotbar.position = Vector2((size.x-224)/2,size.y-220)
+	hotbar.size = Vector2(224,48)
+	field_menu.position = Vector2(maxf(10,(size.x-560)/2),10)
+	field_menu.size = Vector2(minf(560,size.x-20),size.y-20)
 	chat.position = Vector2(maxf(10,(size.x-540)/2),maxf(100,size.y-320))
 	chat.size = Vector2(minf(540,size.x-20),180)
-	toast.position = Vector2(10,size.y-158)
+	toast.position = Vector2(10,size.y-250)
 	toast.size = Vector2(size.x-20,28)
 func say(value: String, advance: bool) -> void:
 	pending = advance
@@ -128,6 +152,17 @@ func say(value: String, advance: bool) -> void:
 	stick.reset()
 	game.actor.motion = Vector2.ZERO
 	layout()
+func toggle_menu() -> void:
+	if chat.visible: return
+	field_menu.visible = not field_menu.visible
+	menu_button.visible = not field_menu.visible
+	stick.reset()
+	game.actor.motion = Vector2.ZERO
+	bottom.visible = not field_menu.visible
+	hotbar.visible = not field_menu.visible
+	if field_menu.visible: field_menu.rebuild()
+func blocked() -> bool:
+	return chat.visible or field_menu.visible
 func close_chat() -> void:
 	chat.hide()
 	if pending:
@@ -138,6 +173,12 @@ func notify(value: String, persistent: bool = false) -> void:
 	toast.show()
 	toast_time = 99999 if persistent else 2.5
 func _process(delta: float) -> void:
+	for i in range(3):
+		var id = game.kit.hotbar[i]
+		quick_slots[i].icon = preload("res://assets/ui/field-ration.svg") if id == "ration" else preload("res://assets/ui/core-nectar.svg") if id == "nectar" else null
+		quick_slots[i].text = "%d · %d" % [i+1,game.kit.inventory.get(id,0)] if id != "" else "%d · —" % [i+1]
+		quick_slots[i].disabled = id == "" or game.kit.inventory.get(id,0) <= 0
+	dodge_button.text = "DODGE %ds" % ceili(game.dodge_cooldown) if game.dodge_cooldown > 0 else "DODGE"
 	toast_time -= delta
 	if toast_time <= 0: toast.hide()
 	hp.max_value = game.stats().Health

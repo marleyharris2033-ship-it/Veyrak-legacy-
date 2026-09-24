@@ -19,6 +19,12 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and mouse_down: point(event.position)
 	accept_event()
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed and finger == -1 and is_visible_in_tree() and get_global_rect().has_point(event.position):
+		finger = event.index
+		mouse_down = false
+		point(get_global_transform().affine_inverse()*event.position)
+	if event is InputEventScreenDrag and event.index == finger:
+		point(get_global_transform().affine_inverse()*event.position)
 	if event is InputEventScreenTouch and not event.pressed and event.index == finger: reset()
 	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT and mouse_down: reset()
 func point(value: Vector2) -> void:
