@@ -57,6 +57,7 @@ func _ready() -> void:
 		elif phase == "intro":
 			monologue_index = int(SaveSlots.checkpoint.state.get("intro_index",0))
 			_intro()
+		elif phase == "tutorial": get_tree().change_scene_to_file("res://tutorial.tscn")
 		elif phase == "ready": _endpoint()
 		else: _creator()
 	elif SaveSlots.return_to_slots:
@@ -214,6 +215,7 @@ func _open_slot(slot: int) -> void:
 		"intro":
 			monologue_index = int(state.get("intro_index",0))
 			_intro()
+		"tutorial": get_tree().change_scene_to_file("res://tutorial.tscn")
 		"ready": _endpoint()
 		_: _creator()
 
@@ -358,8 +360,13 @@ func _endpoint() -> void:
 	content.add_child(portrait)
 	_label(content,profile.name,28,GOLD)
 	_label(content,"VEYRAKIAN OF VEYATHUUN",16)
-	_label(content,"Your legacy is saved.\nThe first chapter awaits.",18)
+	_label(content,"Your legacy is saved.\nReport to the Council training terrace.",18)
 	notice = _label(content,"",14,GOLD)
+	_button(content,"BEGIN TRAINING",func():
+		if SaveSlots.save_checkpoint(profile,"res://tutorial.tscn","Council Training Terrace",{"phase":"tutorial","play_seconds":int(play_seconds)}) == OK:
+			get_tree().change_scene_to_file("res://tutorial.tscn")
+		else: notice.text = "Could not save. Please try again."
+	,true)
 	_button(content,"RETURN TO TITLE",func():
 		if _store("ready") == OK: _title()
 		else: notice.text = "Could not save. Please try again."
