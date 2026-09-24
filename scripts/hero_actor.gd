@@ -13,14 +13,16 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite = Sprite2D.new()
 	sprite.texture = SHEET
-	sprite.hframes = 4
-	sprite.vframes = 6
+	# Use explicit atlas regions instead of hframes/vframes. Some source artwork
+	# crosses the nominal 256px cell boundaries; the safe top insets prevent
+	# neighbouring-frame pixels (the stray marks seen above Nyvara) rendering.
+	sprite.region_enabled = true
 	# The generated atlas cells include artwork close to their source-cell edges.
 	# Give the gameplay render a small safe inset instead of enlarging/re-cropping
 	# individual heroes; this keeps all six on one consistent feet anchor and
 	# prevents weapons/hair from appearing clipped at frame boundaries.
 	sprite.position = Vector2(0,-42)
-	sprite.scale = Vector2(.305,.305)
+	sprite.scale = Vector2(.34,.34)
 	add_child(sprite)
 	_update_frame()
 func _process(delta: float) -> void:
@@ -31,7 +33,10 @@ func _process(delta: float) -> void:
 func _update_frame() -> void:
 	var col = 2 if facing.y < -.1 else 0
 	if motion.length_squared() > .01: col += int(clock*7.0)%2
-	sprite.frame = maxi(0,VeyrakHeroes.index_of(hero_id))*4+col
+	var row = maxi(0,VeyrakHeroes.index_of(hero_id))
+	var top_insets = [0, 8, 8, 8, 20, 8]
+	var inset = top_insets[row]
+	sprite.region_rect = Rect2(col*256, row*256+inset, 256, 256-inset)
 	sprite.flip_h = facing.x < 0
 	# Keep the feet anchor stable across front/rear and walk frames.
 	sprite.position = Vector2(0,-42 - (1 if motion.length_squared()>.01 and int(clock*7.0)%2 else 0))
