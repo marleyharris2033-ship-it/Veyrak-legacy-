@@ -38,14 +38,14 @@ func _ready() -> void:
 	top_frame.add_child(identity)
 	var portrait = FacePortrait.new()
 	portrait.hero_id = game.profile.hero_id
-	portrait.custom_minimum_size = Vector2(58,58)
+	portrait.custom_minimum_size = Vector2(44,44)
 	identity.add_child(portrait)
 	var bars = VBoxContainer.new()
 	bars.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bars.add_theme_constant_override("separation",3)
 	identity.add_child(bars)
 	var name = label(bars,game.profile.name.to_upper())
-	name.add_theme_font_size_override("font_size",14)
+	name.add_theme_font_size_override("font_size",12)
 	hp = meter(bars,Color("aa4945"))
 	core = meter(bars,Color("448cb8"))
 	map = preload("res://scripts/terrace_minimap.gd").new()
@@ -114,7 +114,7 @@ func label(parent: Node, value: String) -> Label:
 
 func meter(parent: Node, colour: Color) -> ProgressBar:
 	var p = ProgressBar.new()
-	p.custom_minimum_size = Vector2(100,11)
+	p.custom_minimum_size = Vector2(88,8)
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	p.show_percentage = false
 	for type in ["background","fill"]:
@@ -193,15 +193,15 @@ func layout() -> void:
 		return
 	var portrait_mode = size.y > size.x*1.12
 	var margin = 8.0
-	var map_side = 96.0 if portrait_mode else 108.0
-	var top_h = 68.0 if portrait_mode else 74.0
-	var frame_w = clampf(size.x-map_side-24.0,190.0,310.0)
+	var map_side = 82.0 if portrait_mode else 92.0
+	var top_h = 54.0 if portrait_mode else 60.0
+	var frame_w = clampf(size.x-map_side-24.0,172.0,260.0)
 	top_frame.position = Vector2(margin,margin)
 	top_frame.size = Vector2(frame_w,top_h)
 	map.position = Vector2(size.x-map_side-margin,margin)
 	map.size = Vector2(map_side,map_side)
 	pack_button.position = Vector2(margin,top_h+18)
-	character_button.position = Vector2(margin,top_h+76)
+	character_button.position = Vector2(margin,top_h+68)
 	var side_icon = 50.0 if portrait_mode else 56.0
 	pack_button.size = Vector2(side_icon,side_icon)
 	character_button.size = Vector2(side_icon,side_icon)
