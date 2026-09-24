@@ -14,8 +14,10 @@ const FOOD = {
 	"ration":{"name":"Field ration","health":60,"energy":0},
 	"nectar":{"name":"Core nectar","health":0,"energy":50}
 }
-var inventory = {"primary":1,"sidearm":1,"scanner":1,"repair":1,"ration":3,"nectar":2,"harvest":1}
-var hotbar = ["primary","sidearm","scanner","repair","ration","nectar","harvest",""]
+var inventory = {"primary":0,"sidearm":0,"scanner":0,"repair":0,"ration":0,"nectar":0,"harvest":0}
+# Minecraft-style quickbar: a new save begins empty. Items enter inventory only when earned,
+# and appear here only after the player explicitly assigns them.
+var hotbar = ["","","","","","","",""]
 var active_slot = 0
 var upgrades = {}
 var points = 0
@@ -30,7 +32,7 @@ func restore(state: Dictionary, completed: bool, legacy_equipped: bool) -> void:
 	if not items is Dictionary:
 		items = {}
 	for id in inventory:
-		inventory[id] = clampi(int(items.get(id,inventory[id])),0,999)
+		inventory[id] = clampi(int(items.get(id,0)),0,999)
 	var saved = data.get("hotbar",[])
 	if saved is Array and saved.size() == 8:
 		for i in range(8):
